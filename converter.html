@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>单位换算器 - PixelPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-black: #1a1a2e;
+            --pixel-dark: #16213e;
+            --pixel-purple: #4a1942;
+            --pixel-magenta: #e94560;
+            --pixel-cyan: #00fff5;
+            --pixel-yellow: #ffdd00;
+            --pixel-green: #39ff14;
+            --pixel-orange: #ff6b35;
+            --pixel-white: #f1f1f1;
+            --pixel-gray: #6b7280;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: var(--pixel-black);
+            color: var(--pixel-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,.03) 0px, rgba(0,0,0,.03) 1px, transparent 1px, transparent 2px);
+        }
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: linear-gradient(180deg, var(--pixel-dark), var(--pixel-black));
+            border-bottom: 3px solid var(--pixel-cyan);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px; z-index: 1000;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--pixel-white); }
+        .logo-icon { width: 32px; height: 32px; background: var(--pixel-magenta); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .logo-text { font-size: 12px; }
+        .back-link { color: var(--pixel-cyan); text-decoration: none; font-size: 12px; padding: 8px 14px; border: 2px solid var(--pixel-cyan); }
+        .back-link:hover { background: var(--pixel-cyan); color: var(--pixel-black); }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 80px 16px 40px; }
+
+        .page-title { font-size: 16px; color: var(--pixel-yellow); text-align: center; margin-bottom: 6px; text-shadow: 2px 2px 0 var(--pixel-purple); }
+        .page-sub { font-size: 11px; color: var(--pixel-gray); text-align: center; margin-bottom: 20px; }
+
+        /* 分类标签 */
+        .category-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; }
+        .cat-tab {
+            font-family: inherit; font-size: 11px; padding: 9px 13px;
+            background: var(--pixel-dark); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-gray); cursor: pointer; transition: all 0.1s;
+        }
+        .cat-tab:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+        .cat-tab.active { border-color: var(--pixel-yellow); color: var(--pixel-yellow); background: rgba(255,221,0,.08); }
+
+        /* 换算区域 */
+        .converter-box {
+            background: var(--pixel-dark);
+            border: 3px solid var(--pixel-purple);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .conv-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px;
+        }
+        .conv-from { flex: 1; }
+        .conv-swap { flex-shrink: 0; }
+
+        .conv-label { font-size: 11px; color: var(--pixel-gray); margin-bottom: 8px; }
+
+        .input-wrap {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--pixel-black);
+            border: 2px solid var(--pixel-purple);
+            padding: 10px 12px;
+            transition: border-color 0.15s;
+        }
+        .input-wrap:focus-within { border-color: var(--pixel-cyan); }
+
+        .num-input {
+            flex: 1; font-family: inherit; font-size: 18px;
+            background: none; border: none; color: var(--pixel-white);
+            outline: none; min-width: 0; width: 100%;
+        }
+        .num-input::placeholder { color: var(--pixel-gray); font-size: 13px; }
+
+        .unit-select {
+            font-family: inherit; font-size: 12px;
+            background: var(--pixel-purple); border: none;
+            color: var(--pixel-white); padding: 4px 8px; cursor: pointer;
+        }
+
+        /* 交换按钮 */
+        .swap-btn {
+            width: 48px; height: 48px;
+            background: var(--pixel-magenta); border: 3px solid var(--pixel-magenta);
+            color: var(--pixel-white); font-size: 20px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; flex-shrink: 0;
+        }
+        .swap-btn:hover { background: var(--pixel-cyan); border-color: var(--pixel-cyan); color: var(--pixel-black); transform: rotate(180deg); }
+
+        /* 全部结果 */
+        .results-title { font-size: 12px; color: var(--pixel-cyan); margin-bottom: 12px; }
+        .results-box {
+            background: var(--pixel-black);
+            border: 2px solid var(--pixel-purple);
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+        .result-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+            font-size: 12px;
+        }
+        .result-row:last-child { border-bottom: none; }
+        .result-unit { color: var(--pixel-gray); }
+        .result-value { color: var(--pixel-yellow); font-size: 13px; }
+        .result-value.highlight { color: var(--pixel-green); font-size: 14px; }
+
+        /* 趣味提示 */
+        .fun-tip {
+            background: rgba(57,255,20,.08);
+            border: 2px solid var(--pixel-green);
+            padding: 14px;
+            margin-bottom: 20px;
+            font-size: 11px; color: var(--pixel-green);
+            line-height: 2.2;
+        }
+        .fun-tip::before { content: '💡 '; }
+
+        /* 常用快捷 */
+        .quick-title { font-size: 11px; color: var(--pixel-gray); margin-bottom: 10px; }
+        .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+        .quick-btn {
+            font-family: inherit; font-size: 10px; padding: 7px 12px;
+            background: var(--pixel-black); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-gray); cursor: pointer; transition: all 0.1s;
+        }
+        .quick-btn:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+
+        /* 交换动画 */
+        @keyframes swap-anim { 0% { transform: rotate(0deg); } 100% { transform: rotate(180deg); } }
+        .swap-btn.animating { animation: swap-anim 0.3s ease; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: var(--pixel-yellow); color: var(--pixel-black);
+            font-size: 11px; padding: 12px 20px; z-index: 9999;
+            display: none; white-space: nowrap;
+        }
+        .toast.show { display: block; animation: toastIn 0.3s; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">▶</div>
+            <span class="logo-text">PIXELPLAY</span>
+        </a>
+        <a href="index.html" class="back-link">← 首页</a>
+    </nav>
+
+    <div class="container">
+        <h1 class="page-title">📐 单位换算器</h1>
+        <p class="page-sub">选择类别 → 输入数字 → 实时换算所有单位</p>
+
+        <!-- 分类 -->
+        <div class="category-tabs" id="catTabs"></div>
+
+        <!-- 换算区 -->
+        <div class="converter-box">
+            <div class="conv-row">
+                <div class="conv-from">
+                    <div class="conv-label" id="fromLabel">从</div>
+                    <div class="input-wrap">
+                        <input type="number" class="num-input" id="numInput" placeholder="输入数值..." oninput="convert()" onkeydown="convert()">
+                        <select class="unit-select" id="fromUnit" onchange="convert()"></select>
+                    </div>
+                </div>
+
+                <button class="swap-btn" id="swapBtn" onclick="swapUnits()" title="交换单位">⇄</button>
+
+                <div class="conv-from">
+                    <div class="conv-label" id="toLabel">转换为</div>
+                    <div class="input-wrap">
+                        <input type="text" class="num-input" id="toInput" placeholder="结果" readonly>
+                        <select class="unit-select" id="toUnit" onchange="convert()"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全部换算结果 -->
+        <div class="results-box" id="resultsBox">
+            <div class="results-title">📋 全部换算结果</div>
+            <div id="resultsList"></div>
+        </div>
+
+        <!-- 趣味提示 -->
+        <div class="fun-tip" id="funTip"></div>
+
+        <!-- 快捷输入 -->
+        <div class="quick-title">⚡ 常用快捷值</div>
+        <div class="quick-btns" id="quickBtns"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    // ============ 换算数据 ============
+    var CATEGORIES = [
+        {
+            id: 'length',
+            name: '长度',
+            icon: '📏',
+            units: [
+                { id: 'm',   name: '米(m)',      ratio: 1 },
+                { id: 'cm',  name: '厘米(cm)',   ratio: 0.01 },
+                { id: 'mm',  name: '毫米(mm)',   ratio: 0.001 },
+                { id: 'km',  name: '公里(km)',   ratio: 1000 },
+                { id: 'mi',  name: '英里(mi)',   ratio: 1609.344 },
+                { id: 'yd',  name: '码(yd)',     ratio: 0.9144 },
+                { id: 'ft',  name: '英尺(ft)',    ratio: 0.3048 },
+                { id: 'in',  name: '英寸(in)',    ratio: 0.0254 },
+                { id: 'li',  name: '里',         ratio: 500 },
+                { id: 'zhang', name: '丈',        ratio: 3.3333 },
+            ],
+            tips: [
+                '1公里 ≈ 走1000步，约12分钟',
+                '1米 ≈ 成年人一步的长度',
+                '1英寸 = 2.54厘米 = 一根拇指的宽度',
+                '1英尺 ≈ 一支铅笔的长度',
+            ],
+            quicks: ['1', '100', '1000', '10000', '42.195']
+        },
+        {
+            id: 'weight',
+            name: '重量',
+            icon: '⚖️',
+            units: [
+                { id: 'kg',  name: '千克(kg)',  ratio: 1 },
+                { id: 'g',   name: '克(g)',      ratio: 0.001 },
+                { id: 'mg',  name: '毫克(mg)',   ratio: 0.000001 },
+                { id: 't',   name: '吨(t)',      ratio: 1000 },
+                { id: 'lb',  name: '磅(lb)',     ratio: 0.453592 },
+                { id: 'oz',  name: '盎司(oz)',  ratio: 0.0283495 },
+                { id: 'jin', name: '斤',         ratio: 0.5 },
+                { id: 'liang', name: '两',      ratio: 0.05 },
+            ],
+            tips: [
+                '1斤 = 500克，买菜最常用',
+                '1磅 ≈ 9两，中国人比较难拿捏',
+                '1盎司 ≈ 28克，常用于化妆品',
+                '1吨 = 1000千克 = 约一辆小汽车',
+            ],
+            quicks: ['1', '500', '1000', '50', '2.5']
+        },
+        {
+            id: 'temp',
+            name: '温度',
+            icon: '🌡️',
+            units: [
+                { id: 'c', name: '摄氏度(℃)', ratio: 1, offset: 0 },
+                { id: 'f', name: '华氏度(℉)', ratio: 5/9, offset: -32 },
+                { id: 'k', name: '开尔文(K)', ratio: 1, offset: -273.15 },
+            ],
+            // 温度特殊处理，不用ratio
+            tips: [
+                '0℃ = 32℉ = 水的冰点',
+                '37℃ = 98.6℉ = 人体正常体温',
+                '100℃ = 212℉ = 水的沸点',
+                '-40℃ = -40℉ = 两者相同的唯一点',
+            ],
+            quicks: ['0', '37', '100', '-40', '25']
+        },
+        {
+            id: 'area',
+            name: '面积',
+            icon: '🗺️',
+            units: [
+                { id: 'm2',  name: '平方米(㎡)',    ratio: 1 },
+                { id: 'cm2', name: '平方厘米(c㎡)', ratio: 0.0001 },
+                { id: 'km2', name: '平方公里(k㎡)', ratio: 1000000 },
+                { id: 'ha',  name: '公顷(ha)',     ratio: 10000 },
+                { id: 'mu',  name: '亩',           ratio: 666.667 },
+                { id: 'ft2', name: '平方英尺(sqft)', ratio: 0.092903 },
+                { id: 'yd2', name: '平方码(sqyd)',   ratio: 0.836127 },
+                { id: 'mi2', name: '平方英里(sqmi)', ratio: 2589988.11 },
+            ],
+            tips: [
+                '1亩 ≈ 666.7平方米，农村常用',
+                '1公顷 = 15亩 = 10000平方米',
+                '1平方公里 = 100公顷 = 100万平方米',
+                '一个标准足球场 ≈ 7.14亩',
+            ],
+            quicks: ['1', '100', '1000', '666.7', '10000']
+        },
+        {
+            id: 'speed',
+            name: '速度',
+            icon: '🚀',
+            units: [
+                { id: 'ms',  name: '米/秒(m/s)', ratio: 1 },
+                { id: 'kmh', name: '公里/时(km/h)', ratio: 1/3.6 },
+                { id: 'mph', name: '英里/时(mph)', ratio: 0.44704 },
+                { id: 'kn',  name: '节(knot)',   ratio: 0.514444 },
+                { id: 'ftps', name: '英尺/秒(ft/s)', ratio: 0.3048 },
+                { id: 'mach', name: '马赫(Ma)',   ratio: 343 },
+            ],
+            tips: [
+                '1马赫 ≈ 1225 km/h，声音的速度',
+                '高速公路一般限速 100-120 km/h',
+                '成年人走路 ≈ 1.1-1.5 m/s',
+                '高铁速度 ≈ 300 km/h',
+            ],
+            quicks: ['1', '10', '100', '340', '120']
+        },
+        {
+            id: 'data',
+            name: '数据',
+            icon: '💾',
+            units: [
+                { id: 'b',   name: '字节(B)',   ratio: 1 },
+                { id: 'kb',  name: '千字节(KB)', ratio: 1024 },
+                { id: 'mb',  name: '兆字节(MB)', ratio: 1048576 },
+                { id: 'gb',  name: '吉字节(GB)', ratio: 1073741824 },
+                { id: 'tb',  name: '太字节(TB)', ratio: 1099511627776 },
+                { id: 'bit', name: '比特(bit)',  ratio: 0.125 },
+            ],
+            tips: [
+                '1字节 = 8比特，一个英文字母占1字节',
+                '一首MP3 ≈ 3-5MB',
+                '一部高清电影 ≈ 1.5-4GB',
+                '1GB ≈ 10亿字节 = 1024MB',
+            ],
+            quicks: ['1', '1024', '1048576', '1000000000', '8']
+        },
+        {
+            id: 'time',
+            name: '时间',
+            icon: '⏰',
+            units: [
+                { id: 's',  name: '秒(s)',  ratio: 1 },
+                { id: 'ms', name: '毫秒(ms)', ratio: 0.001 },
+                { id: 'min', name: '分钟(min)', ratio: 60 },
+                { id: 'h',  name: '小时(h)', ratio: 3600 },
+                { id: 'd',  name: '天(d)',  ratio: 86400 },
+                { id: 'w',  name: '周(w)',  ratio: 604800 },
+                { id: 'mo', name: '月(30天)', ratio: 2592000 },
+            ],
+            tips: [
+                '1年 ≈ 365.25天 = 31557600秒',
+                '眨眼一次 ≈ 100-150毫秒',
+                '1个月按30天计算，实际有差异',
+                '一生按80年算 ≈ 2522880000秒',
+            ],
+            quicks: ['1', '60', '3600', '86400', '31536000']
+        },
+        {
+            id: 'pressure',
+            name: '压力',
+            icon: '🎈',
+            units: [
+                { id: 'pa',  name: '帕斯卡(Pa)',   ratio: 1 },
+                { id: 'kpa', name: '千帕(kPa)',     ratio: 1000 },
+                { id: 'mpa', name: '兆帕(MPa)',    ratio: 1000000 },
+                { id: 'bar', name: '巴(bar)',       ratio: 100000 },
+                { id: 'atm', name: '标准大气压(atm)', ratio: 101325 },
+                { id: 'mmhg', name: '毫米汞柱(mmHg)', ratio: 133.322 },
+                { id: 'psi', name: '磅/平方英寸(psi)', ratio: 6894.76 },
+            ],
+            tips: [
+                '1个标准大气压 = 101325 Pa = 760 mmHg',
+                '汽车轮胎气压一般 2.0-2.8 bar',
+                '大气压随海拔升高而降低',
+                '天气预报中的"百帕"就是 kPa',
+            ],
+            quicks: ['1', '101325', '100000', '760', '2.5']
+        },
+        {
+            id: 'energy',
+            name: '能量',
+            icon: '⚡',
+            units: [
+                { id: 'j',   name: '焦耳(J)',       ratio: 1 },
+                { id: 'kj',  name: '千焦(kJ)',      ratio: 1000 },
+                { id: 'cal', name: '卡(cal)',      ratio: 4.184 },
+                { id: 'kcal', name: '千卡(kcal)',  ratio: 4184 },
+                { id: 'wh',  name: '瓦时(Wh)',     ratio: 3600 },
+                { id: 'kwh', name: '千瓦时(kWh)',  ratio: 3600000 },
+                { id: 'ev',  name: '电子伏特(eV)',   ratio: 1.602e-19 },
+            ],
+            tips: [
+                '1碗米饭 ≈ 200 kcal = 836 kJ',
+                '1kWh = 一度电 = 1台空调开1小时',
+                '1千卡 = 4184焦耳 = 走1公里消耗',
+                '1焦耳 = 举起1个苹果到1米高',
+            ],
+            quicks: ['1', '4184', '1000', '3600', '200']
+        }
+    ];
+
+    var currentCat = CATEGORIES[0];
+    var currentFromIdx = 0;
+    var currentToIdx = 1;
+
+    // ============ 初始化 ============
+    function init() {
+        renderTabs();
+        selectCategory(CATEGORIES[0].id);
+    }
+
+    function renderTabs() {
+        var tabsEl = document.getElementById('catTabs');
+        tabsEl.innerHTML = '';
+        CATEGORIES.forEach(function(cat) {
+            var btn = document.createElement('button');
+            btn.className = 'cat-tab' + (cat.id === currentCat.id ? ' active' : '');
+            btn.textContent = cat.icon + ' ' + cat.name;
+            btn.onclick = function() { selectCategory(cat.id); };
+            tabsEl.appendChild(btn);
+        });
+    }
+
+    function selectCategory(catId) {
+        currentCat = CATEGORIES.find(function(c) { return c.id === catId; });
+
+        // 更新tab高亮
+        document.querySelectorAll('.cat-tab').forEach(function(t) {
+            t.classList.toggle('active', t.textContent.includes(currentCat.name));
+        });
+
+        // 填充单位选择器
+        var fromSel = document.getElementById('fromUnit');
+        var toSel = document.getElementById('toUnit');
+        fromSel.innerHTML = '';
+        toSel.innerHTML = '';
+
+        currentCat.units.forEach(function(u, i) {
+            fromSel.options.add(new Option(u.name, i));
+            toSel.options.add(new Option(u.name, i));
+        });
+
+        // 默认：第一个 → 第二个
+        currentFromIdx = 0;
+        currentToIdx = 1;
+        fromSel.selectedIndex = 0;
+        toSel.selectedIndex = 1;
+
+        // 填充快捷按钮
+        renderQuicks();
+
+        // 填充趣味提示
+        var tip = currentCat.tips[Math.floor(Math.random() * currentCat.tips.length)];
+        document.getElementById('funTip').textContent = tip;
+
+        // 初始换算
+        document.getElementById('numInput').value = '';
+        document.getElementById('toInput').value = '';
+        document.getElementById('resultsList').innerHTML = '<div style="color:var(--pixel-gray);font-size:11px;text-align:center;padding:20px;">输入数字开始换算</div>';
+    }
+
+    function renderQuicks() {
+        var quickBtns = document.getElementById('quickBtns');
+        quickBtns.innerHTML = '';
+        currentCat.quicks.forEach(function(v) {
+            var btn = document.createElement('button');
+            btn.className = 'quick-btn';
+            btn.textContent = v;
+            btn.onclick = function() {
+                document.getElementById('numInput').value = v;
+                convert();
+            };
+            quickBtns.appendChild(btn);
+        });
+    }
+
+    // ============ 核心换算逻辑 ============
+    function convert() {
+        var num = parseFloat(document.getElementById('numInput').value);
+        var fromIdx = parseInt(document.getElementById('fromUnit').value);
+        var toIdx = parseInt(document.getElementById('toUnit').value);
+        var toInput = document.getElementById('toInput');
+
+        if (isNaN(num) || num === '') {
+            toInput.value = '';
+            document.getElementById('resultsList').innerHTML = '<div style="color:var(--pixel-gray);font-size:11px;text-align:center;padding:20px;">输入数字开始换算</div>';
+            return;
+        }
+
+        currentFromIdx = fromIdx;
+        currentToIdx = toIdx;
+
+        // 温度特殊处理
+        var result;
+        if (currentCat.id === 'temp') {
+            result = convertTemp(num, fromIdx, toIdx);
+        } else {
+            var fromU = currentCat.units[fromIdx];
+            var toU = currentCat.units[toIdx];
+            result = num * fromU.ratio / toU.ratio;
+        }
+
+        // 显示主结果
+        toInput.value = formatNum(result);
+
+        // 显示全部结果
+        renderAllResults(num, fromIdx);
+    }
+
+    function convertTemp(num, fromIdx, toIdx) {
+        // 先转为摄氏度
+        var c;
+        if (fromIdx === 0) c = num; // ℃
+        else if (fromIdx === 1) c = (num - 32) * 5/9; // ℉ → ℃
+        else c = num - 273.15; // K → ℃
+
+        // 再从摄氏度转为目标
+        if (toIdx === 0) return c; // ℃
+        else if (toIdx === 1) return c * 9/5 + 32; // ℃ → ℉
+        else return c + 273.15; // ℃ → K
+    }
+
+    function renderAllResults(num, fromIdx) {
+        var list = document.getElementById('resultsList');
+        var fromU = currentCat.units[fromIdx];
+        list.innerHTML = '';
+
+        currentCat.units.forEach(function(u, i) {
+            if (i === fromIdx) return; // 跳过自己
+
+            var val;
+            if (currentCat.id === 'temp') {
+                val = convertTemp(num, fromIdx, i);
+            } else {
+                val = num * fromU.ratio / u.ratio;
+            }
+
+            var isTo = (i === currentToIdx);
+            var row = document.createElement('div');
+            row.className = 'result-row';
+
+            var valStr = formatNum(val);
+            row.innerHTML =
+                '<span class="result-unit">' + u.name + '</span>' +
+                '<span class="result-value' + (isTo ? ' highlight' : '') + '">' + valStr + '</span>';
+            list.appendChild(row);
+        });
+    }
+
+    function formatNum(n) {
+        if (Math.abs(n) === 0) return '0';
+        if (Math.abs(n) >= 1e9) return n.toExponential(4);
+        if (Math.abs(n) < 0.0001 && n !== 0) return n.toExponential(4);
+        // 智能小数位
+        var abs = Math.abs(n);
+        var decimals = 6;
+        if (abs >= 1000) decimals = 2;
+        else if (abs >= 1) decimals = 4;
+        else if (abs >= 0.01) decimals = 6;
+        else if (abs >= 0.0001) decimals = 8;
+        return parseFloat(n.toFixed(decimals)).toString();
+    }
+
+    // ============ 交换单位 ============
+    function swapUnits() {
+        var fromSel = document.getElementById('fromUnit');
+        var toSel = document.getElementById('toUnit');
+
+        var tmp = fromSel.selectedIndex;
+        fromSel.selectedIndex = toSel.selectedIndex;
+        toSel.selectedIndex = tmp;
+
+        currentFromIdx = fromSel.selectedIndex;
+        currentToIdx = toSel.selectedIndex;
+
+        // 动画
+        var btn = document.getElementById('swapBtn');
+        btn.classList.add('animating');
+        setTimeout(function() { btn.classList.remove('animating'); }, 300);
+
+        convert();
+        showToast('已交换单位 ✓');
+    }
+
+    // ============ Toast ============
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 1500);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
