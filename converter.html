@@ -68,20 +68,21 @@
             margin-bottom: 20px;
         }
         .conv-row {
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: stretch; gap: 10px;
             margin-bottom: 16px;
         }
-        .conv-from { flex: 1; }
-        .conv-swap { flex-shrink: 0; }
+        .conv-from { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .conv-swap { flex-shrink: 0; display: flex; align-items: center; }
 
-        .conv-label { font-size: 11px; color: var(--pixel-gray); margin-bottom: 8px; }
+        .conv-label { font-size: 13px; color: var(--pixel-gray); margin-bottom: 4px; }
 
         .input-wrap {
             display: flex; align-items: center; gap: 8px;
             background: var(--pixel-black);
             border: 2px solid var(--pixel-purple);
-            padding: 10px 12px;
+            padding: 14px 14px;
             transition: border-color 0.15s;
+            min-height: 52px;
         }
         .input-wrap:focus-within { border-color: var(--pixel-cyan); }
 
@@ -155,11 +156,37 @@
         .toast {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
             background: var(--pixel-yellow); color: var(--pixel-black);
-            font-size: 11px; padding: 12px 20px; z-index: 9999;
+            font-size: 13px; padding: 14px 24px; z-index: 9999;
             display: none; white-space: nowrap;
         }
         .toast.show { display: block; animation: toastIn 0.3s; }
         @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        /* 响应式 - 手机适配 */
+        @media (max-width: 480px) {
+            .container { padding: 80px 12px 40px; }
+            .page-title { font-size: 18px; }
+            .page-sub { font-size: 12px; }
+            .cat-tab { font-size: 13px; padding: 10px 14px; }
+            /* 手机上两个输入框上下排列 */
+            .conv-row { flex-direction: column; }
+            .swap-btn {
+                align-self: center;
+                width: 56px; height: 56px;
+                font-size: 22px;
+            }
+            .conv-from { width: 100%; }
+            .input-wrap { min-height: 56px; padding: 14px 16px; }
+            .num-input { font-size: 20px; }
+            .unit-select { font-size: 13px; padding: 8px 10px; }
+            .results-box { padding: 16px; }
+            .result-row { font-size: 13px; padding: 12px 0; }
+            .quick-btn { font-size: 13px; padding: 12px 14px; }
+        }
+        @media (max-width: 360px) {
+            .cat-tab { font-size: 12px; padding: 9px 12px; }
+            .page-title { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
