@@ -707,33 +707,35 @@
             let frame = 0;
             
             function animate() {
-                ctx.fillStyle = '#1a1a2e';
-                ctx.fillRect(0, 0, w, h);
-                
-                // 网格背景
-                ctx.strokeStyle = color + '20';
-                ctx.lineWidth = 1;
-                for (let i = 0; i < w; i += 20) {
-                    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
-                }
-                for (let i = 0; i < h; i += 20) {
-                    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
-                }
-                
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 12;
-                
-                switch(gameId) {
-                    case 'breakout': drawBreakoutPreview(ctx, w, color, frame); break;
-                    case '2048': draw2048Preview(ctx, w, color, frame); break;
-                    case 'memory': drawMemoryPreview(ctx, w, color, frame); break;
-                    case 'guess': drawGuessPreview(ctx, w, color, frame); break;
-                    case 'shooter': drawShooterPreview(ctx, w, color, frame); break;
-                    case 'datecalc': drawDatecalcPreview(ctx, w, color, frame); break;
+                try {
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(0, 0, w, h);
+                    
+                    // 网格背景
+                    ctx.strokeStyle = color + '20';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < w; i += 20) {
+                        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
                     }
-                
-                ctx.shadowBlur = 0;
-                frame++;
+                    for (let i = 0; i < h; i += 20) {
+                        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
+                    }
+                    
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 8;
+                    
+                    switch(gameId) {
+                        case 'breakout': drawBreakoutPreview(ctx, w, h, color, frame); break;
+                        case '2048': draw2048Preview(ctx, w, h, color, frame); break;
+                        case 'memory': drawMemoryPreview(ctx, w, h, color, frame); break;
+                        case 'guess': drawGuessPreview(ctx, w, h, color, frame); break;
+                        case 'shooter': drawShooterPreview(ctx, w, h, color, frame); break;
+                        case 'datecalc': drawDatecalcPreview(ctx, w, color, frame); break;
+                    }
+                    
+                    ctx.shadowBlur = 0;
+                    frame++;
+                } catch(e) { console.error('Preview error:', gameId, e); }
                 requestAnimationFrame(animate);
             }
             
@@ -990,7 +992,7 @@
                 
                 card.innerHTML = `
                     <div class="game-thumbnail" style="background: ${tool.color}20">
-                        <span style="font-size:64px; text-shadow: 0 0 20px ${tool.color}">${tool.icon}</span>
+                        <canvas id="preview-${tool.id}" width="280" height="158"></canvas>
                         ${tool.mobile ? '<span class="mobile-badge">📱 手机</span>' : ''}
                     </div>
                     <div class="game-info">
@@ -1002,7 +1004,107 @@
                 `;
                 
                 grid.appendChild(card);
+                drawToolPreview(tool.id, tool.icon, tool.color);
             });
+        }
+
+        function drawToolPreview(toolId, icon, color) {
+            const canvas = document.getElementById(`preview-${toolId}`);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            let frame = 0;
+
+            function animate() {
+                frame++;
+                ctx.clearRect(0, 0, w, h);
+
+                // 日期计算器专用动画
+                if (toolId === 'datecalc') {
+                    drawDatecalcPreview(ctx, w, color, frame);
+                }
+                // 转盘专用动画
+                else if (toolId === 'wheel') {
+                    drawWheelPreview(ctx, w, h, color, frame);
+                }
+                // 通用工具动画：图标浮动 + 背景粒子
+                else {
+                    var t = frame * 0.03;
+                    // 背景粒子
+                    ctx.globalAlpha = 0.3;
+                    for (var i = 0; i < 8; i++) {
+                        var px = (w * 0.5 + Math.cos(t + i * 0.8) * (40 + i * 10)) % w;
+                        var py = (h * 0.5 + Math.sin(t * 0.7 + i * 1.1) * (20 + i * 8)) % h;
+                        ctx.fillStyle = color;
+                        var size = 2 + Math.sin(t + i) * 1.5;
+                        ctx.fillRect(px, py, Math.max(1, size), Math.max(1, size));
+                    }
+                    ctx.globalAlpha = 1;
+                    // 图标浮动
+                    var offsetY = Math.sin(t * 1.5) * 6;
+                    ctx.font = '56px serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(icon, w * 0.5, h * 0.45 + offsetY);
+                    // 光晕
+                    ctx.globalAlpha = 0.15 + Math.sin(t * 2) * 0.1;
+                    ctx.beginPath();
+                    ctx.arc(w * 0.5, h * 0.45 + offsetY, 35, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    // 底部文字滚动
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.font = '8px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    var labels = ['TOOL', 'UTILITY', 'READY', 'PIXEL'];
+                    var labelIdx = Math.floor(t * 0.5) % labels.length;
+                    ctx.fillText(labels[labelIdx], w * 0.5, h * 0.85);
+                }
+
+                setTimeout(() => requestAnimationFrame(animate), 50);
+            }
+            animate();
+        }
+
+        // 转盘预览动画
+        function drawWheelPreview(ctx, w, h, color, frame) {
+            var t = frame * 0.02;
+            var cx = w * 0.5, cy = h * 0.5, r = Math.min(w, h) * 0.35;
+            var slices = 8;
+            var colors = ['#e94560','#9b59b6','#3498db','#39ff14','#ffdd00','#ff6b35','#00fff5','#6b7280'];
+            for (var i = 0; i < slices; i++) {
+                var startAngle = (Math.PI * 2 / slices) * i + t;
+                var endAngle = startAngle + Math.PI * 2 / slices;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i];
+                ctx.globalAlpha = 0.7;
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            // 外圈
+            ctx.beginPath();
+            ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffdd00';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            // 中心
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffdd00';
+            ctx.fill();
+            // 指针
+            ctx.fillStyle = '#e94560';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - r - 8);
+            ctx.lineTo(cx - 8, cy - r - 22);
+            ctx.lineTo(cx + 8, cy - r - 22);
+            ctx.closePath();
+            ctx.fill();
         }
         
         // ========== 日期计算器预览动画 ==========
