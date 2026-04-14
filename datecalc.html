@@ -160,7 +160,7 @@
 
         .date-inputs {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .date-field {
@@ -168,6 +168,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            min-width: 60px;
         }
 
         .field-label {
@@ -178,11 +179,11 @@
 
         .field-input {
             font-family: inherit;
-            font-size: 16px;
+            font-size: 18px;
             background: var(--pixel-black);
             border: 2px solid var(--pixel-purple);
             color: var(--pixel-white);
-            padding: 14px 8px;
+            padding: 16px 10px;
             text-align: center;
             width: 100%;
             outline: none;
@@ -190,10 +191,13 @@
         }
 
         .field-input:focus { border-color: var(--pixel-cyan); }
-        .field-input::placeholder { color: var(--pixel-gray); font-size: 11px; }
+        .field-input::placeholder { color: var(--pixel-gray); font-size: 12px; }
 
         /* 年份输入稍大 */
-        .year-input { max-width: 96px; flex: 0 0 96px; font-size: 18px; }
+        .year-input { max-width: 120px; flex: 0 0 120px; font-size: 20px; padding: 16px 12px; }
+
+        /* 月/日输入也有最小宽度 */
+        .date-field:not(.year-field) .field-input { min-width: 70px; }
 
         /* 按钮 */
         .action-btn {
@@ -337,19 +341,21 @@
             .page-title { font-size: 18px; }
             .mode-tab { font-size: 12px; padding: 12px 14px; }
             .field-input { font-size: 18px; padding: 16px 8px; }
-            .year-input { max-width: 80px; flex: 0 0 80px; }
+            .year-input { max-width: 100px; flex: 0 0 100px; font-size: 18px; }
             .result-big { font-size: 22px; }
             .action-btn { font-size: 14px; padding: 18px; }
             .today-info { flex-direction: column; align-items: center; }
             .today-item-value { font-size: 16px; }
             .result-sub { font-size: 14px; }
             .fun-tip { font-size: 13px; }
+            .date-inputs { gap: 8px; }
         }
 
         @media (max-width: 360px) {
             .date-inputs { gap: 6px; }
-            .year-input { max-width: 80px; flex: 0 0 80px; font-size: 16px; }
+            .year-input { max-width: 88px; flex: 0 0 88px; font-size: 16px; }
             .field-input { font-size: 16px; padding: 14px 4px; }
+            .date-field { min-width: 50px; }
         }
     </style>
 </head>
