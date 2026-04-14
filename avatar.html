@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>像素头像生成器 - PixelPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-black: #1a1a2e; --pixel-dark: #16213e; --pixel-purple: #4a1942;
+            --pixel-magenta: #e94560; --pixel-cyan: #00fff5; --pixel-yellow: #ffdd00;
+            --pixel-green: #39ff14; --pixel-orange: #ff6b35; --pixel-white: #f1f1f1; --pixel-gray: #6b7280;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: var(--pixel-black);
+            color: var(--pixel-white);
+            min-height: 100vh; overflow-x: hidden;
+        }
+        body::before {
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,.03) 0px, rgba(0,0,0,.03) 1px, transparent 1px, transparent 2px);
+        }
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: linear-gradient(180deg, var(--pixel-dark), var(--pixel-black));
+            border-bottom: 3px solid var(--pixel-cyan);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px; z-index: 1000;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--pixel-white); }
+        .logo-icon { width: 32px; height: 32px; background: var(--pixel-magenta); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .logo-text { font-size: 12px; letter-spacing: 1px; }
+        .back-link { color: var(--pixel-cyan); text-decoration: none; font-size: 12px; padding: 10px 16px; border: 2px solid var(--pixel-cyan); }
+        .back-link:hover { background: var(--pixel-cyan); color: var(--pixel-black); }
+
+        .container { max-width: 640px; margin: 0 auto; padding: 80px 16px 32px; }
+
+        .page-title { font-size: 16px; color: var(--pixel-yellow); text-align: center; margin-bottom: 8px; text-shadow: 2px 2px 0 var(--pixel-purple); }
+        .page-sub { font-size: 11px; color: var(--pixel-gray); text-align: center; margin-bottom: 24px; line-height: 2; }
+
+        /* 头像展示 */
+        .avatar-showcase {
+            display: flex; justify-content: center; margin-bottom: 24px;
+        }
+        .avatar-frame {
+            position: relative; padding: 12px;
+            background: var(--pixel-dark); border: 3px solid var(--pixel-purple);
+            box-shadow: 0 0 30px rgba(233,69,96,.3);
+        }
+        .avatar-frame::before {
+            content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px;
+            border: 3px solid var(--pixel-cyan); pointer-events: none;
+        }
+        #avatarCanvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; cursor: pointer; }
+        .avatar-size-label {
+            text-align: center; font-size: 11px; color: var(--pixel-gray); margin-top: 8px;
+        }
+        .avatar-size-label span { color: var(--pixel-cyan); }
+
+        .size-selector {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 12px;
+        }
+        .size-label { font-size: 11px; color: var(--pixel-gray); }
+        .size-btn {
+            font-family: inherit; font-size: 11px; padding: 6px 12px;
+            background: var(--pixel-black); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-white); cursor: pointer; transition: all 0.1s;
+        }
+        .size-btn:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+        .size-btn.active { border-color: var(--pixel-yellow); color: var(--pixel-yellow); background: rgba(255,221,0,.1); }
+
+        /* 操作区 */
+        .panel {
+            background: var(--pixel-dark);
+            border: 3px solid var(--pixel-purple);
+            padding: 16px; margin-bottom: 16px;
+        }
+        .panel-title { font-size: 13px; color: var(--pixel-yellow); margin-bottom: 14px; }
+
+        /* 部位选择 */
+        .part-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+        .part-tab {
+            font-family: inherit; font-size: 12px; padding: 10px 14px;
+            background: var(--pixel-black); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-gray); cursor: pointer; transition: all 0.1s;
+        }
+        .part-tab:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+        .part-tab.active { border-color: var(--pixel-yellow); color: var(--pixel-yellow); background: rgba(255,221,0,.1); }
+
+        /* 选项网格 */
+        .option-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .option-btn {
+            aspect-ratio: 1; background: var(--pixel-black); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-white); font-family: inherit; font-size: 11px;
+            cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 4px;
+            transition: all 0.1s; padding: 4px;
+        }
+        .option-btn:hover { border-color: var(--pixel-cyan); }
+        .option-btn.active { border-color: var(--pixel-yellow); color: var(--pixel-yellow); background: rgba(255,221,0,.1); }
+        .option-btn .o-label { font-size: 11px; }
+        .option-btn canvas { image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
+
+        /* 颜色选择 */
+        .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .color-btn {
+            width: 36px; height: 36px; border: 3px solid var(--pixel-purple);
+            cursor: pointer; transition: all 0.1s; padding: 0;
+        }
+        .color-btn:hover { border-color: var(--pixel-cyan); transform: scale(1.1); }
+        .color-btn.active { border-color: var(--pixel-yellow); transform: scale(1.15); }
+
+        /* 下载按钮 */
+        .action-btns { display: flex; gap: 10px; }
+        .action-btn {
+            flex: 1; font-family: inherit; font-size: 13px;
+            padding: 16px 14px; cursor: pointer; text-align: center;
+            border: 3px solid; transition: all 0.1s;
+        }
+        .action-btn.primary { background: var(--pixel-magenta); border-color: var(--pixel-magenta); color: var(--pixel-white); }
+        .action-btn.primary:hover { background: var(--pixel-cyan); border-color: var(--pixel-cyan); color: var(--pixel-black); }
+        .action-btn.secondary { background: transparent; border-color: var(--pixel-purple); color: var(--pixel-white); }
+        .action-btn.secondary:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: var(--pixel-yellow); color: var(--pixel-black);
+            font-family: 'Press Start 2P', monospace; font-size: 12px;
+            padding: 14px 24px; z-index: 9999;
+            display: none; white-space: nowrap;
+        }
+        .toast.show { display: block; animation: toastIn 0.3s; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        .crt::after {
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px);
+            pointer-events: none; z-index: 1000;
+        }
+
+        .seed-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+        .seed-row label { font-size: 11px; color: var(--pixel-gray); flex-shrink: 0; }
+        .seed-row input {
+            flex: 1; font-family: inherit; font-size: 12px;
+            padding: 10px 12px; background: var(--pixel-black);
+            border: 2px solid var(--pixel-purple); color: var(--pixel-cyan); outline: none;
+        }
+        .seed-row button {
+            font-family: inherit; font-size: 11px; padding: 10px 14px;
+            background: var(--pixel-purple); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-white); cursor: pointer;
+        }
+        .seed-row button:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+    </style>
+</head>
+<body class="crt">
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">▶</div>
+            <span class="logo-text">PIXELPLAY</span>
+        </a>
+        <a href="index.html" class="back-link">← 首页</a>
+    </nav>
+
+    <div class="container">
+        <h1 class="page-title">👾 像素头像生成器</h1>
+        <p class="page-sub">随机生成你的专属像素小人<br>可自定义各部位，颜色下载保存</p>
+
+        <!-- 头像展示 -->
+        <div class="avatar-showcase">
+            <div class="avatar-frame">
+                <canvas id="avatarCanvas" width="256" height="256" onclick="randomize()"></canvas>
+                <div class="avatar-size-label">点击头像可<span>随机换装</span></div>
+                <div class="size-selector">
+                    <span class="size-label">画板大小:</span>
+                    <button class="size-btn" onclick="setCanvasSize(128)">128</button>
+                    <button class="size-btn" onclick="setCanvasSize(192)">192</button>
+                    <button class="size-btn active" onclick="setCanvasSize(256)">256</button>
+                    <button class="size-btn" onclick="setCanvasSize(320)">320</button>
+                    <button class="size-btn" onclick="setCanvasSize(384)">384</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 部位选择 -->
+        <div class="panel">
+            <div class="panel-title">🎨 自定义部位</div>
+            <div class="part-tabs" id="partTabs">
+                <button class="part-tab active" onclick="setPart('face')">脸型</button>
+                <button class="part-tab" onclick="setPart('hair')">发型</button>
+                <button class="part-tab" onclick="setPart('eyes')">眼睛</button>
+                <button class="part-tab" onclick="setPart('mouth')">嘴巴</button>
+                <button class="part-tab" onclick="setPart('accessory')">配饰</button>
+            </div>
+            <div id="optionArea"></div>
+        </div>
+
+        <!-- 颜色选择 -->
+        <div class="panel">
+            <div class="panel-title">🎨 颜色</div>
+            <div class="part-tabs" style="margin-bottom:12px;">
+                <button class="part-tab active" onclick="setColorPart('skin')">肤色</button>
+                <button class="part-tab" onclick="setColorPart('hair')">发色</button>
+                <button class="part-tab" onclick="setColorPart('clothes')">衣服</button>
+            </div>
+            <div id="colorArea"></div>
+        </div>
+
+        <!-- 种子码 -->
+        <div class="panel">
+            <div class="panel-title">🔢 种子码（保存/恢复你的头像）</div>
+            <div class="seed-row">
+                <label>种子:</label>
+                <input type="text" id="seedInput" placeholder="随机种子，可复制分享" readonly>
+                <button onclick="copySeed()">📋 复制</button>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-btns">
+            <button class="action-btn secondary" onclick="randomize()">🎲 随机生成</button>
+            <button class="action-btn primary" onclick="downloadAvatar()">💾 下载头像</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    var canvas, ctx;
+    var avatarState = { face: 0, hair: 0, eyes: 0, mouth: 0, accessory: 0, skin: 0, hairColor: 0, clothes: 0 };
+    var currentPart = 'face';
+    var currentColorPart = 'skin';
+
+    // ============ 像素部件数据 ============
+    // 每个部件: 8×8 像素阵列，0=透明 1=主体 2=高光 3=阴影
+
+    var FACES = [
+        // 0: 圆脸
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,0,1,1,1,1,0,0],
+            [0,1,2,1,1,2,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,0,1,1,1,1,0,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 1: 方脸
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,2,1,1,2,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 2: 长脸
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,0,1,1,1,1,0,0],
+            [0,1,2,1,1,2,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 3: 宽脸（可爱）
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,0,1,1,1,1,0,0],
+            [0,1,2,1,1,2,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,0,1,1,1,1,0,0],
+            [0,0,0,0,0,0,0,0]
+        ]
+    ];
+
+    var HAIRS = [
+        // 0: 短发
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1],
+            [0,0,1,1,1,1,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 1: 长发
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,1,0],
+            [0,1,1,0,0,1,1,0],
+            [0,1,1,0,0,1,1,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 2: 光头
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 3: 爆炸头
+        [
+            [0,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,1,0],
+            [0,0,1,1,1,1,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 4: 双马尾
+        [
+            [0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1],
+            [0,0,1,1,1,1,0,0],
+            [1,1,0,0,0,0,1,1],
+            [1,1,0,0,0,0,1,1],
+            [0,0,0,0,0,0,0,0]
+        ],
+        // 5: 帽子
+        [
+            [0,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1],
+            [1,1,2,1,1,2,1,1],
+            [0,0,1,1,1,1,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ]
+    ];
+
+    var EYES = [
+        // 0: 普通
+        [[0,0,0,0,0,0,0,0],[0,1,0,0,0,0,1,0],[0,0,1,0,0,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 1: 眯眼笑
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,1,1,0,0,1,1,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 2: 惊讶
+        [[0,0,0,0,0,0,0,0],[0,1,0,0,0,0,1,0],[0,2,0,0,0,0,2,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 3: 害羞眯眯眼
+        [[0,0,0,0,0,0,0,0],[0,1,0,0,0,0,1,0],[0,0,1,0,0,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 4: 墨镜
+        [[0,0,0,0,0,0,0,0],[0,1,1,1,1,1,1,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+    ];
+
+    var MOUTHS = [
+        // 0: 微笑
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 1: 严肃
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[1,1,1,1,1,1,1,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 2: 大笑
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,1,1,1,1,1,1,0],[0,0,1,0,0,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 3: 吐舌头
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 4: 无口
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+    ];
+
+    var ACCESSORIES = [
+        // 0: 无
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 1: 眼镜
+        [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 2: 帽子
+        [[0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 3: 耳机
+        [[0,0,0,0,0,0,0,0],[0,0,1,0,0,1,0,0],[0,1,1,1,1,1,1,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+        // 4: 皇冠
+        [[0,0,1,0,0,1,0,0],[1,0,1,0,0,1,0,1],[1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+    ];
+
+    var SKIN_COLORS = [
+        '#f5cba7', '#e8b88a', '#c68642', '#8d5524', '#5c3a21', '#ffe0bd'
+    ];
+    var HAIR_COLORS = [
+        '#2c1810', '#8b4513', '#d4a853', '#e8d5a3', '#c0392b', '#2c3e50', '#8e44ad', '#e74c3c'
+    ];
+    var CLOTHES_COLORS = [
+        '#e94560', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
+    ];
+
+    var PART_DEFS = [
+        { key: 'face', name: '脸型', data: FACES, count: FACES.length, labels: ['圆','方','长','宽'] },
+        { key: 'hair', name: '发型', data: HAIRS, count: HAIRS.length, labels: ['短发','长发','光头','爆炸','双马尾','帽子'] },
+        { key: 'eyes', name: '眼睛', data: EYES, count: EYES.length, labels: ['普通','眯眼','惊讶','害羞','墨镜'] },
+        { key: 'mouth', name: '嘴巴', data: MOUTHS, count: MOUTHS.length, labels: ['微笑','严肃','大笑','吐舌','无口'] },
+        { key: 'accessory', name: '配饰', data: ACCESSORIES, count: ACCESSORIES.length, labels: ['无','眼镜','帽子','耳机','皇冠'] }
+    ];
+
+    // ============ 种子随机数 ============
+    function mulberry32(seed) {
+        return function() {
+            var t = seed += 0x6D2B79F5;
+            t = Math.imul(t ^ t >>> 15, t | 1);
+            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    function hashSeed(str) {
+        var h = 0;
+        for (var i = 0; i < str.length; i++) {
+            h = ((h << 5) - h) + str.charCodeAt(i);
+            h = h & h;
+        }
+        return Math.abs(h);
+    }
+
+    // ============ 渲染 ============
+    function render() {
+        var w = canvas.width, h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        var CELL = w / 12; // 12×12 像素头像
+        var ox = CELL, oy = CELL * 1.5; // 偏移（留头顶空间）
+
+        var skinColor = SKIN_COLORS[avatarState.skin];
+        var hairColor = HAIR_COLORS[avatarState.hairColor];
+        var clothesColor = CLOTHES_COLORS[avatarState.clothes];
+
+        // 衣服背景
+        ctx.fillStyle = clothesColor;
+        ctx.fillRect(ox - CELL * 0.5, oy + CELL * 7.5, CELL * 9, CELL * 3.5);
+
+        // 脸
+        drawPart(FACES[avatarState.face % FACES.length], ox, oy, CELL, skinColor, '#e8c8a0');
+
+        // 眼睛
+        drawPart(EYES[avatarState.eyes % EYES.length], ox, oy, CELL, '#1a1a2e', '#fff');
+
+        // 嘴巴
+        drawPart(MOUTHS[avatarState.mouth % MOUTHS.length], ox, oy, CELL, '#c0392b', '#e74c3c');
+
+        // 头发
+        drawPart(HAIRS[avatarState.hair % HAIRS.length], ox, oy, CELL, hairColor, '#e8d5a3');
+
+        // 配饰
+        drawPart(ACCESSORIES[avatarState.accessory % ACCESSORIES.length], ox, oy, CELL, '#ffd700', '#fff');
+
+        // 生成种子码
+        updateSeed();
+    }
+
+    function drawPart(pattern, ox, oy, CELL, color1, color2) {
+        for (var py = 0; py < 8; py++) {
+            for (var px = 0; px < 8; px++) {
+                var v = pattern[py][px];
+                if (v === 0) continue;
+                ctx.fillStyle = v === 1 ? color1 : v === 2 ? color2 : '#000';
+                ctx.fillRect(ox + px * CELL, oy + py * CELL, CELL, CELL);
+            }
+        }
+    }
+
+    // ============ 随机生成 ============
+    function randomize(seedStr) {
+        var rand;
+        if (seedStr) {
+            rand = mulberry32(hashSeed(seedStr));
+        } else {
+            var seed = Math.floor(Math.random() * 999999);
+            rand = mulberry32(seed);
+        }
+
+        avatarState.face = Math.floor(rand() * FACES.length);
+        avatarState.hair = Math.floor(rand() * HAIRS.length);
+        avatarState.eyes = Math.floor(rand() * EYES.length);
+        avatarState.mouth = Math.floor(rand() * MOUTHS.length);
+        avatarState.accessory = Math.floor(rand() * ACCESSORIES.length);
+        avatarState.skin = Math.floor(rand() * SKIN_COLORS.length);
+        avatarState.hairColor = Math.floor(rand() * HAIR_COLORS.length);
+        avatarState.clothes = Math.floor(rand() * CLOTHES_COLORS.length);
+
+        render();
+        renderOptions();
+        renderColors();
+        updateSeed();
+    }
+
+    // ============ 种子码 ============
+    function updateSeed() {
+        var seedStr = [
+            avatarState.face, avatarState.hair, avatarState.eyes,
+            avatarState.mouth, avatarState.accessory, avatarState.skin,
+            avatarState.hairColor, avatarState.clothes
+        ].join('-');
+        document.getElementById('seedInput').value = seedStr;
+    }
+
+    function loadFromSeed(seedStr) {
+        var parts = seedStr.split('-');
+        if (parts.length !== 8) return false;
+        avatarState.face = parseInt(parts[0]);
+        avatarState.hair = parseInt(parts[1]);
+        avatarState.eyes = parseInt(parts[2]);
+        avatarState.mouth = parseInt(parts[3]);
+        avatarState.accessory = parseInt(parts[4]);
+        avatarState.skin = parseInt(parts[5]);
+        avatarState.hairColor = parseInt(parts[6]);
+        avatarState.clothes = parseInt(parts[7]);
+        render();
+        renderOptions();
+        renderColors();
+        return true;
+    }
+
+    function copySeed() {
+        var input = document.getElementById('seedInput');
+        input.select();
+        document.execCommand('copy');
+        showToast('种子码已复制！');
+    }
+
+    // ============ UI ============
+    function setPart(key) {
+        currentPart = key;
+        document.querySelectorAll('.part-tab').forEach(function(t) { t.classList.remove('active'); });
+        event.target.classList.add('active');
+        renderOptions();
+    }
+
+    function setColorPart(key) {
+        currentColorPart = key;
+        document.querySelectorAll('.part-tabs').forEach(function(t) { t.classList.remove('active'); });
+        event.target.classList.add('active');
+        renderColors();
+    }
+
+    function renderOptions() {
+        var def = PART_DEFS.find(function(d) { return d.key === currentPart; });
+        var area = document.getElementById('optionArea');
+        area.innerHTML = '';
+
+        var grid = document.createElement('div');
+        grid.className = 'option-grid';
+
+        for (var i = 0; i < def.count; i++) {
+            var btn = document.createElement('button');
+            btn.className = 'option-btn' + (avatarState[currentPart] === i ? ' active' : '');
+            btn.onclick = (function(idx) { return function() {
+                avatarState[currentPart] = idx;
+                render();
+                renderOptions();
+            }; })(i);
+
+            // 预览小画布
+            var previewCanvas = document.createElement('canvas');
+            previewCanvas.width = 32; previewCanvas.height = 32;
+            var previewCtx = previewCanvas.getContext('2d');
+            var CELL = 4;
+            for (var py = 0; py < 8; py++) {
+                for (var px = 0; px < 8; px++) {
+                    var v = def.data[i][py][px];
+                    if (v === 0) continue;
+                    previewCtx.fillStyle = v === 1 ? '#e94560' : v === 2 ? '#fff' : '#000';
+                    previewCtx.fillRect(px * CELL, py * CELL, CELL, CELL);
+                }
+            }
+
+            var label = document.createElement('span');
+            label.className = 'o-label';
+            label.textContent = def.labels[i] || (i + 1);
+
+            btn.appendChild(previewCanvas);
+            btn.appendChild(label);
+            grid.appendChild(btn);
+        }
+        area.appendChild(grid);
+    }
+
+    function renderColors() {
+        var area = document.getElementById('colorArea');
+        var colors, current;
+        if (currentColorPart === 'skin') { colors = SKIN_COLORS; current = avatarState.skin; }
+        else if (currentColorPart === 'hair') { colors = HAIR_COLORS; current = avatarState.hairColor; }
+        else { colors = CLOTHES_COLORS; current = avatarState.clothes; }
+
+        area.innerHTML = '';
+        var row = document.createElement('div');
+        row.className = 'color-row';
+
+        colors.forEach(function(c, i) {
+            var btn = document.createElement('button');
+            btn.className = 'color-btn' + (current === i ? ' active' : '');
+            btn.style.background = c;
+            btn.onclick = (function(idx) { return function() {
+                if (currentColorPart === 'skin') avatarState.skin = idx;
+                else if (currentColorPart === 'hair') avatarState.hairColor = idx;
+                else avatarState.clothes = idx;
+                render();
+                renderColors();
+            }; })(i);
+            row.appendChild(btn);
+        });
+        area.appendChild(row);
+    }
+
+    function downloadAvatar() {
+        var dlCanvas = document.createElement('canvas');
+        dlCanvas.width = currentCanvasSize; dlCanvas.height = currentCanvasSize;
+        var dlCtx = dlCanvas.getContext('2d');
+
+        // 全尺寸画头像
+        var CELL = currentCanvasSize / 12;
+        var ox = CELL, oy = CELL * 1.5;
+        var skinColor = SKIN_COLORS[avatarState.skin];
+        var hairColor = HAIR_COLORS[avatarState.hairColor];
+        var clothesColor = CLOTHES_COLORS[avatarState.clothes];
+
+        dlCtx.fillStyle = clothesColor;
+        dlCtx.fillRect(ox - CELL * 0.5, oy + CELL * 7.5, CELL * 9, CELL * 3.5);
+
+        function drawPart(pattern, ox, oy, CELL, color1, color2) {
+            for (var py = 0; py < 8; py++) {
+                for (var px = 0; px < 8; px++) {
+                    var v = pattern[py][px];
+                    if (v === 0) continue;
+                    dlCtx.fillStyle = v === 1 ? color1 : v === 2 ? color2 : '#000';
+                    dlCtx.fillRect(ox + px * CELL, oy + py * CELL, CELL, CELL);
+                }
+            }
+        }
+
+        drawPart(FACES[avatarState.face % FACES.length], ox, oy, CELL, skinColor, '#e8c8a0');
+        drawPart(EYES[avatarState.eyes % EYES.length], ox, oy, CELL, '#1a1a2e', '#fff');
+        drawPart(MOUTHS[avatarState.mouth % MOUTHS.length], ox, oy, CELL, '#c0392b', '#e74c3c');
+        drawPart(HAIRS[avatarState.hair % HAIRS.length], ox, oy, CELL, hairColor, '#e8d5a3');
+        drawPart(ACCESSORIES[avatarState.accessory % ACCESSORIES.length], ox, oy, CELL, '#ffd700', '#fff');
+
+        var link = document.createElement('a');
+        link.download = 'pixel_avatar_' + currentCanvasSize + 'x' + currentCanvasSize + '_' + Date.now() + '.png';
+        link.href = dlCanvas.toDataURL('image/png');
+        link.click();
+        showToast('头像已保存 (' + currentCanvasSize + 'x' + currentCanvasSize + ')！');
+    }
+
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2000);
+    }
+
+    var currentCanvasSize = 256;
+
+    function setCanvasSize(size) {
+        currentCanvasSize = size;
+        canvas.width = size;
+        canvas.height = size;
+        render();
+
+        // 更新按钮状态
+        document.querySelectorAll('.size-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.textContent === String(size)) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    function init() {
+        canvas = document.getElementById('avatarCanvas');
+        ctx = canvas.getContext('2d');
+        randomize();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
