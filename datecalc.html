@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 日期计算器 - PixelPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-black: #0a0a0a;
+            --pixel-dark: #0f0f1a;
+            --pixel-purple: #4a1982;
+            --pixel-magenta: #e94560;
+            --pixel-cyan: #00fff5;
+            --pixel-yellow: #ffdd00;
+            --pixel-green: #39ff14;
+            --pixel-gray: #6b7280;
+            --pixel-white: #f1f1f1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: var(--pixel-white);
+        }
+
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.03) 0px,
+                rgba(0,0,0,0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, rgba(26,26,46,0.98), rgba(10,10,26,0.95));
+            border-bottom: 3px solid var(--pixel-cyan);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: var(--pixel-white);
+        }
+
+        .logo-icon {
+            width: 34px; height: 34px;
+            background: var(--pixel-cyan);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+
+        .logo-text { font-size: 10px; letter-spacing: 1px; }
+
+        .back-link {
+            color: var(--pixel-cyan);
+            text-decoration: none;
+            font-size: 9px;
+            padding: 8px 12px;
+            border: 2px solid var(--pixel-cyan);
+            transition: all 0.2s;
+        }
+
+        .back-link:hover { background: var(--pixel-cyan); color: var(--pixel-black); }
+
+        /* 主容器 */
+        .container {
+            max-width: 540px;
+            margin: 0 auto;
+            padding: 80px 16px 40px;
+        }
+
+        /* 标题 */
+        .page-title {
+            font-size: 16px;
+            color: var(--pixel-yellow);
+            text-align: center;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 0 var(--pixel-purple);
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { text-shadow: 2px 2px 0 var(--pixel-purple), 0 0 10px rgba(255,221,0,0.3); }
+            50% { text-shadow: 2px 2px 0 var(--pixel-purple), 0 0 20px rgba(255,221,0,0.6); }
+        }
+
+        .page-sub {
+            font-size: 10px;
+            color: var(--pixel-gray);
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 2;
+        }
+
+        /* 模式标签 */
+        .mode-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .mode-tab {
+            font-family: inherit;
+            font-size: 10px;
+            padding: 10px 14px;
+            background: var(--pixel-dark);
+            border: 2px solid var(--pixel-purple);
+            color: var(--pixel-gray);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .mode-tab:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+        .mode-tab.active {
+            border-color: var(--pixel-yellow);
+            color: var(--pixel-yellow);
+            background: rgba(255,221,0,.08);
+        }
+
+        /* 计算区 */
+        .calc-box {
+            background: var(--pixel-dark);
+            border: 3px solid var(--pixel-purple);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        /* 日期输入行 */
+        .date-row {
+            margin-bottom: 16px;
+        }
+
+        .date-row:last-child { margin-bottom: 0; }
+
+        .row-label {
+            font-size: 11px;
+            color: var(--pixel-cyan);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-inputs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .date-field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-label {
+            font-size: 9px;
+            color: var(--pixel-gray);
+            text-align: center;
+        }
+
+        .field-input {
+            font-family: inherit;
+            font-size: 14px;
+            background: var(--pixel-black);
+            border: 2px solid var(--pixel-purple);
+            color: var(--pixel-white);
+            padding: 12px 8px;
+            text-align: center;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .field-input:focus { border-color: var(--pixel-cyan); }
+        .field-input::placeholder { color: var(--pixel-gray); font-size: 10px; }
+
+        /* 年份输入稍大 */
+        .year-input { max-width: 80px; flex: 0 0 80px; }
+
+        /* 按钮 */
+        .action-btn {
+            width: 100%;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 16px;
+            background: var(--pixel-magenta);
+            border: 3px solid var(--pixel-magenta);
+            color: var(--pixel-white);
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.15s;
+        }
+
+        .action-btn:hover { background: var(--pixel-cyan); border-color: var(--pixel-cyan); color: var(--pixel-black); }
+
+        /* 快捷节日 */
+        .quick-holiday {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,.08);
+        }
+
+        .quick-holiday-title {
+            font-size: 9px;
+            color: var(--pixel-gray);
+            margin-bottom: 10px;
+        }
+
+        .quick-holiday-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .holiday-btn {
+            font-family: inherit;
+            font-size: 10px;
+            padding: 8px 12px;
+            background: var(--pixel-black);
+            border: 2px solid var(--pixel-purple);
+            color: var(--pixel-gray);
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .holiday-btn:hover { border-color: var(--pixel-yellow); color: var(--pixel-yellow); }
+
+        /* 结果区 */
+        .result-box {
+            background: var(--pixel-black);
+            border: 3px solid var(--pixel-yellow);
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 16px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .result-empty {
+            font-size: 11px;
+            color: var(--pixel-gray);
+            line-height: 2.5;
+        }
+
+        .result-big {
+            font-size: 22px;
+            color: var(--pixel-yellow);
+            text-shadow: 0 0 15px rgba(255,221,0,0.6);
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        .result-big .accent { color: var(--pixel-cyan); text-shadow: 0 0 10px rgba(0,255,245,0.6); }
+
+        .result-sub {
+            font-size: 11px;
+            color: var(--pixel-gray);
+            line-height: 2.2;
+        }
+
+        .result-sub span { color: var(--pixel-white); }
+
+        /* 趣味提示 */
+        .fun-tip {
+            background: rgba(57,255,20,.06);
+            border: 2px solid var(--pixel-green);
+            padding: 16px;
+            font-size: 11px;
+            color: var(--pixel-green);
+            line-height: 2.4;
+            margin-bottom: 16px;
+        }
+
+        .fun-tip::before { content: '💡 '; }
+
+        /* 今日信息 */
+        .today-info {
+            background: var(--pixel-dark);
+            border: 2px solid var(--pixel-purple);
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .today-item {
+            text-align: center;
+        }
+
+        .today-item-label {
+            font-size: 9px;
+            color: var(--pixel-gray);
+            margin-bottom: 6px;
+        }
+
+        .today-item-value {
+            font-size: 12px;
+            color: var(--pixel-cyan);
+            text-shadow: 0 0 8px rgba(0,255,245,0.4);
+        }
+
+        /* 生日输入 */
+        .birthday-tip {
+            font-size: 10px;
+            color: var(--pixel-gray);
+            margin-top: 8px;
+            line-height: 2;
+        }
+
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .container { padding: 80px 12px 40px; }
+            .page-title { font-size: 14px; }
+            .mode-tab { font-size: 10px; padding: 10px 12px; }
+            .field-input { font-size: 16px; padding: 14px 6px; }
+            .year-input { max-width: 72px; flex: 0 0 72px; }
+            .result-big { font-size: 18px; }
+            .action-btn { font-size: 12px; padding: 16px; }
+            .today-info { flex-direction: column; align-items: center; }
+        }
+
+        @media (max-width: 360px) {
+            .date-inputs { gap: 4px; }
+            .year-input { max-width: 60px; flex: 0 0 60px; }
+            .field-input { font-size: 14px; padding: 12px 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">▶</div>
+            <span class="logo-text">PIXELPLAY</span>
+        </a>
+        <a href="index.html" class="back-link">← 首页</a>
+    </nav>
+
+    <div class="container">
+        <h1 class="page-title">📅 日期计算器</h1>
+        <p class="page-sub">日期差 · 倒计时 · 推算 · 星期几 · 年龄</p>
+
+        <!-- 今日信息 -->
+        <div class="today-info">
+            <div class="today-item">
+                <div class="today-item-label">今天</div>
+                <div class="today-item-value" id="todayDisplay">加载中...</div>
+            </div>
+            <div class="today-item">
+                <div class="today-item-label">星期</div>
+                <div class="today-item-value" id="todayWeek">加载中...</div>
+            </div>
+            <div class="today-item">
+                <div class="today-item-label">今年已过</div>
+                <div class="today-item-value" id="todayPassed">加载中...</div>
+            </div>
+            <div class="today-item">
+                <div class="today-item-label">今年剩余</div>
+                <div class="today-item-value" id="todayLeft">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 模式选择 -->
+        <div class="mode-tabs" id="modeTabs">
+            <button class="mode-tab active" data-mode="diff">📊 日期差</button>
+            <button class="mode-tab" data-mode="countdown">⏰ 倒计时</button>
+            <button class="mode-tab" data-mode="calc">➕ 日期推算</button>
+            <button class="mode-tab" data-mode="weekday">📆 星期几</button>
+            <button class="mode-tab" data-mode="age">🎂 年龄</button>
+            <button class="mode-tab" data-mode="anniversary">💑 纪念日</button>
+        </div>
+
+        <!-- 计算区 -->
+        <div class="calc-box" id="calcBox">
+            <!-- 由JS动态渲染 -->
+        </div>
+
+        <!-- 结果 -->
+        <div class="result-box" id="resultBox">
+            <div class="result-empty">📋 输入日期，即可查看结果</div>
+        </div>
+
+        <!-- 趣味提示 -->
+        <div class="fun-tip" id="funTip" style="display:none"></div>
+    </div>
+
+    <script>
+    // ============ 数据 ============
+    var WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    var WEEKDAYS_SHORT = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+    // 2026年节日（公历）
+    var HOLIDAYS_2026 = [
+        { name: '元旦', date: '2026-01-01', emoji: '🎉' },
+        { name: '春节', date: '2026-02-17', emoji: '🧧' },
+        { name: '元宵节', date: '2026-02-24', emoji: '🏮' },
+        { name: '妇女节', date: '2026-03-08', emoji: '🌷' },
+        { name: '清明节', date: '2026-04-05', emoji: '🌿' },
+        { name: '劳动节', date: '2026-05-01', emoji: '🔨' },
+        { name: '青年节', date: '2026-05-04', emoji: '🌱' },
+        { name: '儿童节', date: '2026-06-01', emoji: '🎈' },
+        { name: '端午节', date: '2026-05-31', emoji: '🐉' },
+        { name: '中秋节', date: '2026-10-04', emoji: '🥮' },
+        { name: '国庆节', date: '2026-10-01', emoji: '🇨🇳' },
+        { name: '重阳节', date: '2026-10-29', emoji: '🌼' },
+        { name: '圣诞节', date: '2026-12-25', emoji: '🎄' },
+    ];
+
+    var currentMode = 'diff';
+
+    // ============ 工具函数 ============
+    function parseDateStr(str) {
+        if (!str || str.trim() === '') return null;
+        var parts = str.trim().split(/[-\/\.]/);
+        if (parts.length === 3) {
+            var y = parseInt(parts[0], 10);
+            var m = parseInt(parts[1], 10) - 1;
+            var d = parseInt(parts[2], 10);
+            var date = new Date(y, m, d);
+            if (date.getFullYear() === y && date.getMonth() === m && date.getDate() === d) {
+                return date;
+            }
+        }
+        return null;
+    }
+
+    function formatDate(date) {
+        return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日';
+    }
+
+    function formatDateShort(date) {
+        return (date.getMonth() + 1) + '/' + date.getDate();
+    }
+
+    function getDaysDiff(d1, d2) {
+        var diff = Math.abs(d2 - d1);
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+
+    function getWeeksDays(days) {
+        var weeks = Math.floor(days / 7);
+        var remain = days % 7;
+        return { weeks: weeks, days: remain };
+    }
+
+    function getMonthsDays(d1, d2) {
+        var m1 = d1.getFullYear() * 12 + d1.getMonth();
+        var m2 = d2.getFullYear() * 12 + d2.getMonth();
+        var monthDiff = Math.abs(m2 - m1);
+        var sign = d2 >= d1 ? 1 : -1;
+        var dayDiff = d2.getDate() - d1.getDate();
+        return { months: monthDiff, days: Math.abs(dayDiff), sign: sign };
+    }
+
+    function getWeekday(date) {
+        return WEEKDAYS[date.getDay()];
+    }
+
+    function daysInYear(year) {
+        return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0) ? 366 : 365;
+    }
+
+    function getDayOfYear(date) {
+        var start = new Date(date.getFullYear(), 0, 0);
+        var diff = date - start;
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+
+    function getAge(birthday) {
+        var today = new Date();
+        var age = today.getFullYear() - birthday.getFullYear();
+        var m = today.getMonth() - birthday.getMonth();
+        var d = today.getDate() - birthday.getDate();
+        if (d < 0) { m--; }
+        if (m < 0) { age--; m += 12; }
+        var totalDays = getDaysDiff(birthday, today);
+        var years = age;
+        var months = m;
+        var days = d < 0 ? new Date(today.getFullYear(), today.getMonth(), 0).getDate() + d : d;
+        return { years: years, months: months, days: days < 0 ? 0 : days, totalDays: totalDays };
+    }
+
+    // ============ 今日信息 ============
+    function initTodayInfo() {
+        var today = new Date();
+        document.getElementById('todayDisplay').textContent = today.getFullYear() + '/' + (today.getMonth()+1) + '/' + today.getDate();
+        document.getElementById('todayWeek').textContent = WEEKDAYS[today.getDay()];
+        var doy = getDayOfYear(today);
+        var total = daysInYear(today.getFullYear());
+        document.getElementById('todayPassed').textContent = doy + '天';
+        document.getElementById('todayLeft').textContent = (total - doy) + '天';
+    }
+
+    // ============ 模式渲染 ============
+    function renderCalcBox() {
+        var box = document.getElementById('calcBox');
+        var html = '';
+
+        switch (currentMode) {
+            case 'diff':
+                html = '<div class="date-row"><div class="row-label">📅 起始日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="y1" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="m1" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="d1" placeholder="1" min="1" max="31"></div></div></div><div class="date-row"><div class="row-label">📅 结束日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="y2" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="m2" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="d2" placeholder="1" min="1" max="31"></div></div></div><div class="quick-holiday"><div class="quick-holiday-title">⚡ 快捷节日</div><div class="quick-holiday-btns" id="diffHolidayBtns"></div></div>';
+                break;
+            case 'countdown':
+                html = '<div class="date-row"><div class="row-label">🎯 目标日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="cy" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="cm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="cd" placeholder="1" min="1" max="31"></div></div></div><div class="quick-holiday"><div class="quick-holiday-title">🎉 快捷节日</div><div class="quick-holiday-btns" id="countdownHolidayBtns"></div></div>';
+                break;
+            case 'calc':
+                html = '<div class="date-row"><div class="row-label">📅 起始日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="aky" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="akm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="akd" placeholder="1" min="1" max="31"></div></div></div><div class="date-row"><div class="row-label">➕➖ 加减天数</div><div class="date-inputs" style="align-items:center"><div class="date-field" style="flex:1"><input type="number" class="field-input" id="addDays" placeholder="输入天数，如100" style="text-align:center" value="100" min="-9999" max="9999"></div></div></div>';
+                break;
+            case 'weekday':
+                html = '<div class="date-row"><div class="row-label">📅 查询日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="wy" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="wm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="wd" placeholder="1" min="1" max="31"></div></div></div>';
+                break;
+            case 'age':
+                html = '<div class="date-row"><div class="row-label">🎂 出生日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="by" placeholder="2000" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="bm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="bd" placeholder="1" min="1" max="31"></div></div></div><div class="birthday-tip">💡 输入出生日期，计算精确年龄</div>';
+                break;
+            case 'anniversary':
+                html = '<div class="date-row"><div class="row-label">💑 纪念日日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="any" placeholder="2020" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="anm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="and" placeholder="1" min="1" max="31"></div></div></div>';
+                break;
+        }
+
+        box.innerHTML = html;
+        renderHolidayBtns();
+        attachInputListeners();
+        // 自动计算
+        autoCalc();
+    }
+
+    function renderHolidayBtns() {
+        var today = new Date();
+        var futureHolidays = HOLIDAYS_2026.filter(function(h) {
+            var hd = parseDateStr(h.date);
+            return hd && hd >= today;
+        }).slice(0, 6);
+
+        // diff模式快捷
+        var diffBtns = document.getElementById('diffHolidayBtns');
+        if (diffBtns) {
+            var todayStr = today.getFullYear() + '/' + (today.getMonth()+1) + '/' + today.getDate();
+            diffBtns.innerHTML = '<button class="holiday-btn" onclick="fillDiffToday()">📅 今天</button>' +
+                futureHolidays.map(function(h) {
+                    var hd = parseDateStr(h.date);
+                    return '<button class="holiday-btn" onclick="fillDiff(\'' + h.date + '\')">' + h.emoji + ' ' + h.name + '</button>';
+                }).join('');
+        }
+
+        // 倒计时快捷
+        var cdBtns = document.getElementById('countdownHolidayBtns');
+        if (cdBtns) {
+            cdBtns.innerHTML = futureHolidays.map(function(h) {
+                return '<button class="holiday-btn" onclick="fillCountdown(\'' + h.date + '\')">' + h.emoji + ' ' + h.name + '</button>';
+            }).join('');
+        }
+    }
+
+    function attachInputListeners() {
+        var inputs = document.querySelectorAll('.field-input');
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].removeEventListener('input', autoCalc);
+            inputs[i].removeEventListener('change', autoCalc);
+            inputs[i].addEventListener('input', autoCalc);
+            inputs[i].addEventListener('change', autoCalc);
+        }
+    }
+
+    // ============ 快捷填充 ============
+    function fillDiffToday() {
+        var today = new Date();
+        document.getElementById('y1').value = today.getFullYear();
+        document.getElementById('m1').value = today.getMonth() + 1;
+        document.getElementById('d1').value = today.getDate();
+        autoCalc();
+    }
+
+    function fillDiff(dateStr) {
+        var date = parseDateStr(dateStr);
+        if (!date) return;
+        document.getElementById('y2').value = date.getFullYear();
+        document.getElementById('m2').value = date.getMonth() + 1;
+        document.getElementById('d2').value = date.getDate();
+        autoCalc();
+    }
+
+    function fillCountdown(dateStr) {
+        var date = parseDateStr(dateStr);
+        if (!date) return;
+        document.getElementById('cy').value = date.getFullYear();
+        document.getElementById('cm').value = date.getMonth() + 1;
+        document.getElementById('cd').value = date.getDate();
+        autoCalc();
+    }
+
+    // ============ 自动计算 ============
+    function autoCalc() {
+        switch (currentMode) {
+            case 'diff': calcDiff(); break;
+            case 'countdown': calcCountdown(); break;
+            case 'calc': calcDate(); break;
+            case 'weekday': calcWeekday(); break;
+            case 'age': calcAge(); break;
+            case 'anniversary': calcAnniversary(); break;
+        }
+    }
+
+    // ============ 计算函数 ============
+    function calcDiff() {
+        var y1 = document.getElementById('y1').value;
+        var m1 = document.getElementById('m1').value;
+        var d1 = document.getElementById('d1').value;
+        var y2 = document.getElementById('y2').value;
+        var m2 = document.getElementById('m2').value;
+        var d2 = document.getElementById('d2').value;
+
+        if (!y1 || !m1 || !d1 || !y2 || !m2 || !d2) {
+            showEmpty();
+            return;
+        }
+
+        var date1 = new Date(parseInt(y1), parseInt(m1) - 1, parseInt(d1));
+        var date2 = new Date(parseInt(y2), parseInt(m2) - 1, parseInt(d2));
+
+        if (isNaN(date1) || isNaN(date2)) {
+            showEmpty();
+            return;
+        }
+
+        var days = getDaysDiff(date1, date2);
+        var wd = getWeeksDays(days);
+        var md = getMonthsDays(date1, date2);
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var fromToday = getDaysDiff(today, date2);
+        var workdayCount = countWorkdays(Math.min(date1, date2), Math.max(date1, date2));
+
+        var resultBox = document.getElementById('resultBox');
+        var isFuture = date2 >= date1;
+
+        var html = '<div class="result-big">' +
+            (isFuture ? '⏰ 距离' : '⏪ 已过去') + '<br>' +
+            formatDate(date1) + '<br>' +
+            '<span class="accent">≈ ' + days + ' 天</span>' +
+            '</div>';
+
+        if (fromToday >= 0 && fromToday < 365 * 5) {
+            html += '<div class="result-sub">' +
+                '≈ <span>' + md.months + ' 个月 ' + md.days + ' 天</span><br>' +
+                '≈ <span>' + wd.weeks + ' 周 ' + wd.days + ' 天</span><br>' +
+                '工作日（排除周末）：<span>' + workdayCount + ' 天</span>' +
+                '</div>';
+        }
+
+        resultBox.innerHTML = html;
+
+        // 趣味提示
+        var tips = [
+            '💡 ' + days + ' 天 = ' + (days / 30.44).toFixed(1) + ' 个月（按月均30.44天）',
+            '💡 ' + days + ' 天 ≈ ' + (days / 365).toFixed(2) + ' 年',
+            '💡 ' + days + ' 天里，你大概睡了 ' + Math.floor(days * 8) + ' 小时！',
+            '💡 ' + days + ' 天里，地球绕太阳转了 ' + (days / 365.25).toFixed(4) + ' 圈',
+        ];
+        showTip(tips[Math.floor(Math.random() * tips.length)]);
+    }
+
+    function calcCountdown() {
+        var cy = document.getElementById('cy').value;
+        var cm = document.getElementById('cm').value;
+        var cd = document.getElementById('cd').value;
+
+        if (!cy || !cm || !cd) {
+            showEmpty();
+            return;
+        }
+
+        var target = new Date(parseInt(cy), parseInt(cm) - 1, parseInt(cd));
+        if (isNaN(target)) {
+            showEmpty();
+            return;
+        }
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var diff = target - today;
+        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        var totalHours = Math.floor(diff / (1000 * 60 * 60));
+        var totalMinutes = Math.floor(diff / (1000 * 60));
+
+        if (diff < 0) {
+            var resultBox = document.getElementById('resultBox');
+            resultBox.innerHTML = '<div class="result-big">⏪ 已过去<br><span class="accent">' + Math.abs(days) + ' 天</span></div>';
+            showTip('💡 这个日期已经过了 ' + Math.abs(days) + ' 天啦！');
+            return;
+        }
+
+        var wd = getWeeksDays(days);
+        var doy = getDayOfYear(target);
+        var weekday = getWeekday(target);
+
+        var resultBox = document.getElementById('resultBox');
+        resultBox.innerHTML = '<div class="result-big">⏰ 距离<br><span class="accent">' + formatDate(target) + '</span><br>= <span class="accent">' + days + ' 天</span></div>' +
+            '<div class="result-sub">' +
+            weekday + '（第' + doy + '天）<br>' +
+            '≈ <span>' + wd.weeks + ' 周 ' + wd.days + ' 天</span><br>' +
+            (days < 30 ? '≈ <span>' + Math.floor(totalHours) + ' 小时</span>' : '') +
+            '</div>';
+
+        // 趣味提示
+        var tips = [
+            '💡 再过 ' + days + ' 天，你就可以庆祝这个日子啦！',
+            '💡 ' + days + ' 天后是 ' + weekday + '，是个好日子！',
+            '💡 ' + days + ' 天 = ' + (days / 30.44).toFixed(1) + ' 个月',
+            '💡 那天是今年的第 ' + doy + ' 天',
+        ];
+        showTip(tips[Math.floor(Math.random() * tips.length)]);
+    }
+
+    function calcDate() {
+        var aky = document.getElementById('aky').value;
+        var akm = document.getElementById('akm').value;
+        var akd = document.getElementById('akd').value;
+        var addDays = parseInt(document.getElementById('addDays') ? document.getElementById('addDays').value : '0', 10);
+
+        if (!aky || !akm || !akd) {
+            showEmpty();
+            return;
+        }
+
+        var start = new Date(parseInt(aky), parseInt(akm) - 1, parseInt(akd));
+        if (isNaN(start)) {
+            showEmpty();
+            return;
+        }
+
+        var result = new Date(start.getTime() + addDays * 24 * 60 * 60 * 1000);
+        var weekday = getWeekday(result);
+        var doy = getDayOfYear(result);
+
+        var resultBox = document.getElementById('resultBox');
+        var sign = addDays >= 0 ? '+' : '';
+        resultBox.innerHTML = '<div class="result-big">' + formatDate(start) + '<br>' +
+            sign + addDays + ' 天 =<br>' +
+            '<span class="accent">' + formatDate(result) + '</span></div>' +
+            '<div class="result-sub">' +
+            weekday + ' · 第' + doy + '天' +
+            '</div>';
+
+        showTip('💡 ' + start.getFullYear() + '年' + sign + addDays + '天 = ' + result.getFullYear() + '年' + result.getMonth() + 1 + '月' + result.getDate() + '日');
+    }
+
+    function calcWeekday() {
+        var wy = document.getElementById('wy').value;
+        var wm = document.getElementById('wm').value;
+        var wd = document.getElementById('wd').value;
+
+        if (!wy || !wm || !wd) {
+            showEmpty();
+            return;
+        }
+
+        var date = new Date(parseInt(wy), parseInt(wm) - 1, parseInt(wd));
+        if (isNaN(date)) {
+            showEmpty();
+            return;
+        }
+
+        var weekday = getWeekday(date);
+        var doy = getDayOfYear(date);
+        var totalDays = daysInYear(date.getFullYear());
+
+        var emojis = {
+            '星期日': '☀️',
+            '星期一': '🌙',
+            '星期二': '🌟',
+            '星期三': '💫',
+            '星期四': '✨',
+            '星期五': '🎉',
+            '星期六': '🌈'
+        };
+
+        var resultBox = document.getElementById('resultBox');
+        resultBox.innerHTML = '<div class="result-big">' + formatDate(date) + '<br>' +
+            emojis[weekday] + ' <span class="accent">' + weekday + '</span></div>' +
+            '<div class="result-sub">' +
+            '第 <span>' + doy + '</span> 天（' + doy + '/' + totalDays + '）<br>' +
+            '今年剩余 <span>' + (totalDays - doy) + '</span> 天' +
+            '</div>';
+
+        // 生日相关
+        var today = new Date();
+        if (date.getMonth() === today.getMonth() && date.getDate() === today.getDate()) {
+            showTip('🎂 哇！今天就是这一天！生日快乐！');
+        } else {
+            var birthYear = date.getFullYear();
+            var age = today.getFullYear() - birthYear;
+            if (date < today) age--;
+            showTip('💡 如果是生日，你今年就满 ' + age + ' 岁了！');
+        }
+    }
+
+    function calcAge() {
+        var by = document.getElementById('by').value;
+        var bm = document.getElementById('bm').value;
+        var bd = document.getElementById('bd').value;
+
+        if (!by || !bm || !bd) {
+            showEmpty();
+            return;
+        }
+
+        var birthday = new Date(parseInt(by), parseInt(bm) - 1, parseInt(bd));
+        if (isNaN(birthday)) {
+            showEmpty();
+            return;
+        }
+
+        var today = new Date();
+        if (birthday > today) {
+            var resultBox = document.getElementById('resultBox');
+            resultBox.innerHTML = '<div class="result-big">🤔 还没到呢！<br><span class="accent">出生日期不能是未来</span></div>';
+            showTip('💡 出生日期不能在未来哦～');
+            return;
+        }
+
+        var age = getAge(birthday);
+        var weekday = getWeekday(birthday);
+
+        // 下次生日
+        var nextBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
+        if (nextBirthday < today) {
+            nextBirthday = new Date(today.getFullYear() + 1, birthday.getMonth(), birthday.getDate());
+        }
+        var daysToBirthday = getDaysDiff(today, nextBirthday);
+
+        var resultBox = document.getElementById('resultBox');
+        resultBox.innerHTML = '<div class="result-big">🎂 <span class="accent">' + age.years + ' 岁</span></div>' +
+            '<div class="result-sub">' +
+            '已活 <span>' + age.totalDays + '</span> 天<br>' +
+            '精确年龄：<span>' + age.years + ' 岁 ' + age.months + ' 个月 ' + age.days + ' 天</span><br>' +
+            '下次生日：<span>' + daysToBirthday + ' 天后（' + formatDateShort(nextBirthday) + '）</span>' +
+            '</div>';
+
+        var tips = [
+            '💡 你已经活了 ' + age.totalDays + ' 天，约 ' + (age.totalDays / 365).toFixed(1) + ' 年！',
+            '💡 再过 ' + daysToBirthday + ' 天就是你的生日啦！',
+            '💡 出生那天是 ' + weekday + '，是个好日子！',
+            '💡 到目前为止，你大概睡了 ' + Math.floor(age.totalDays * 8) + ' 小时 😴',
+        ];
+        showTip(tips[Math.floor(Math.random() * tips.length)]);
+    }
+
+    function calcAnniversary() {
+        var any = document.getElementById('any').value;
+        var anm = document.getElementById('anm').value;
+        var and = document.getElementById('and').value;
+
+        if (!any || !anm || !and) {
+            showEmpty();
+            return;
+        }
+
+        var start = new Date(parseInt(any), parseInt(anm) - 1, parseInt(and));
+        if (isNaN(start)) {
+            showEmpty();
+            return;
+        }
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var diff = today - start;
+
+        if (diff < 0) {
+            var resultBox = document.getElementById('resultBox');
+            resultBox.innerHTML = '<div class="result-big">🤔 还没到呢！<br><span class="accent">纪念日不能是未来</span></div>';
+            showTip('💡 纪念日不能在未来哦～');
+            return;
+        }
+
+        var days = getDaysDiff(start, today);
+        var months = Math.floor(days / 30.44);
+        var years = Math.floor(days / 365.25);
+
+        // 下个整数纪念日
+        var next100 = Math.ceil(days / 100) * 100;
+        var next1000 = Math.ceil(days / 1000) * 1000;
+        var next10000 = Math.ceil(days / 10000) * 10000;
+        var nextAnniv = new Date(start.getTime() + next100 * 24 * 60 * 60 * 1000);
+        var daysToNext = next100 - days;
+
+        var resultBox = document.getElementById('resultBox');
+        resultBox.innerHTML = '<div class="result-big">💑 在一起<br><span class="accent">' + days + ' 天</span></div>' +
+            '<div class="result-sub">' +
+            '≈ <span>' + months + ' 个月</span><br>' +
+            '≈ <span>' + years + ' 年</span><br>' +
+            '下一个整数纪念日：<span>' + next100 + '天（' + formatDateShort(nextAnniv) + '，还差' + daysToNext + '天）</span>' +
+            '</div>';
+
+        var tips = [
+            '💡 100天 = 约3.3个月，你们已经一起走过了很多日子 💕',
+            '💡 ' + days + ' 天 = ' + (days / 7).toFixed(0) + ' 周，你们在一起 ' + (days / 7).toFixed(0) + ' 周了！',
+            '💡 人生约 ' + (days / 365.25 * 100).toFixed(1) + '% 的时间都在一起 ❤️',
+            '💡 ' + days + ' 天里，你大概笑了 ' + Math.floor(days * 30) + ' 次 😄',
+        ];
+        showTip(tips[Math.floor(Math.random() * tips.length)]);
+    }
+
+    function countWorkdays(d1, d2) {
+        var count = 0;
+        var cur = new Date(d1);
+        cur.setHours(0, 0, 0, 0);
+        var end = new Date(d2);
+        end.setHours(0, 0, 0, 0);
+        while (cur <= end) {
+            var day = cur.getDay();
+            if (day !== 0 && day !== 6) count++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+    }
+
+    function showEmpty() {
+        document.getElementById('resultBox').innerHTML = '<div class="result-empty">📋 输入日期，即可查看结果</div>';
+        document.getElementById('funTip').style.display = 'none';
+    }
+
+    function showTip(tip) {
+        var el = document.getElementById('funTip');
+        el.textContent = tip;
+        el.style.display = 'block';
+    }
+
+    // ============ 模式切换 ============
+    document.getElementById('modeTabs').addEventListener('click', function(e) {
+        var tab = e.target.closest('.mode-tab');
+        if (!tab) return;
+        document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        currentMode = tab.dataset.mode;
+        renderCalcBox();
+    });
+
+    // ============ 初始化 ============
+    initTodayInfo();
+    renderCalcBox();
+    </script>
+</body>
+</html>
