@@ -600,6 +600,15 @@
                 icon: '📐'
             },
             {
+                id: 'datecalc',
+                title: '日期计算',
+                tags: ['工具', '实用'],
+                color: '#39ff14',
+                mobile: true,
+                file: 'datecalc.html',
+                icon: '📅'
+            },
+            {
                 id: 'avatar',
                 title: '像素头像',
                 tags: ['工具', '创意'],
@@ -715,11 +724,12 @@
                 ctx.shadowBlur = 12;
                 
                 switch(gameId) {
-                    case 'breakout': drawBreakoutPreview(ctx, w, h, color, frame); break;
-                    case '2048': draw2048Preview(ctx, w, h, color, frame); break;
-                    case 'memory': drawMemoryPreview(ctx, w, h, color, frame); break;
-                    case 'guess': drawGuessPreview(ctx, w, h, color, frame); break;
-                    case 'shooter': drawShooterPreview(ctx, w, h, color, frame); break;
+                    case 'breakout': drawBreakoutPreview(ctx, w, color, frame); break;
+                    case '2048': draw2048Preview(ctx, w, color, frame); break;
+                    case 'memory': drawMemoryPreview(ctx, w, color, frame); break;
+                    case 'guess': drawGuessPreview(ctx, w, color, frame); break;
+                    case 'shooter': drawShooterPreview(ctx, w, color, frame); break;
+                    case 'datecalc': drawDatecalcPreview(ctx, w, color, frame); break;
                     }
                 
                 ctx.shadowBlur = 0;
@@ -995,6 +1005,62 @@
             });
         }
         
+        // ========== 日期计算器预览动画 ==========
+        function drawDatecalcPreview(ctx, w, color, f) {
+            var h = w;
+            ctx.clearRect(0, 0, w, h);
+            var t = f * 0.04;
+            var calY = h * 0.15;
+            var calH = h * 0.7;
+            var cellW = calW / 7;
+            // 日历框
+            ctx.fillStyle = 'rgba(255,255,255,0.07)';
+            ctx.fillRect(w * 0.1, calY, w * 0.8, calH);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(w * 0.1, calY, w * 0.8, calH);
+            // 标题栏
+            ctx.fillStyle = color;
+            ctx.fillRect(w * 0.1, calY, w * 0.8, h * 0.12);
+            // 星期标题
+            var weekDays = ['日','一','二','三','四','五','六'];
+            ctx.fillStyle = '#fff';
+            ctx.font = '7px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            for (var i = 0; i < 7; i++) {
+                ctx.fillText(weekDays[i], w * 0.1 + cellW * i + cellW * 0.5, calY + h * 0.09);
+            }
+            // 日期格子（随机选中一天高亮）
+            var startDay = 2;
+            var daysInMonth = 30;
+            var todayHighlight = Math.floor((t * 3) % daysInMonth) + 1;
+            ctx.font = '8px "Press Start 2P"';
+            for (var d = 1; d <= daysInMonth; d++) {
+                var dayIndex = startDay + d - 1;
+                var col = dayIndex % 7;
+                var row = Math.floor(dayIndex / 7);
+                var cx = w * 0.1 + col * cellW + cellW * 0.5;
+                var cy = calY + h * 0.12 + row * (calH * 0.14) + calH * 0.07;
+                if (d === todayHighlight) {
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#000';
+                } else {
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                }
+                ctx.textAlign = 'center';
+                ctx.fillText(d, cx, cy + 3);
+            }
+            // 数字跳动效果
+            ctx.fillStyle = '#fff';
+            ctx.font = '9px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            var num = Math.floor(t * 8) % 9999;
+            ctx.fillText(num, w * 0.5, h * 0.9);
+        }
+
         // ========== 移动端菜单 ==========
         function toggleMenu() {
             document.getElementById('navLinks').classList.toggle('active');
