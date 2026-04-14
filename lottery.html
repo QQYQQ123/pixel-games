@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>彩票机选模拟 - PixelPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-black: #1a1a2e;
+            --pixel-dark: #16213e;
+            --pixel-purple: #4a1942;
+            --pixel-magenta: #e94560;
+            --pixel-cyan: #00fff5;
+            --pixel-yellow: #ffdd00;
+            --pixel-green: #39ff14;
+            --pixel-orange: #ff6b35;
+            --pixel-white: #f1f1f1;
+            --pixel-gray: #6b7280;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: var(--pixel-black);
+            color: var(--pixel-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 2px);
+        }
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 70px;
+            background: linear-gradient(180deg, var(--pixel-dark) 0%, var(--pixel-black) 100%);
+            border-bottom: 4px solid var(--pixel-cyan);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; z-index: 1000;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--pixel-white); }
+        .logo-icon { width: 40px; height: 40px; background: var(--pixel-magenta); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .logo-text { font-size: 14px; letter-spacing: 2px; text-shadow: 2px 2px 0 var(--pixel-cyan), 4px 4px 0 var(--pixel-purple); }
+        .back-link { color: var(--pixel-cyan); text-decoration: none; font-size: 12px; padding: 10px 16px; border: 2px solid var(--pixel-cyan); }
+        .back-link:hover { background: var(--pixel-cyan); color: var(--pixel-black); }
+        .main-content { padding-top: 90px; padding-bottom: 40px; max-width: 520px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+        .page-title { font-size: clamp(16px, 5vw, 24px); text-align: center; margin-bottom: 8px; color: var(--pixel-yellow); text-shadow: 0 0 10px var(--pixel-yellow); }
+        .page-subtitle { font-size: 11px; text-align: center; color: var(--pixel-gray); margin-bottom: 24px; line-height: 2; }
+
+        .lottery-tabs {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+            margin-bottom: 24px;
+        }
+        .lottery-tab {
+            font-family: inherit; font-size: 12px;
+            padding: 12px 16px;
+            background: var(--pixel-dark); border: 3px solid var(--pixel-purple);
+            color: var(--pixel-gray); cursor: pointer;
+            transition: all 0.15s;
+        }
+        .lottery-tab:hover { border-color: var(--pixel-cyan); color: var(--pixel-cyan); }
+        .lottery-tab.active { background: var(--pixel-purple); border-color: var(--pixel-yellow); color: var(--pixel-yellow); box-shadow: 0 0 12px rgba(255,221,0,0.3); }
+
+        .rules-bar {
+            background: var(--pixel-dark); border: 3px solid var(--pixel-purple);
+            padding: 12px; margin-bottom: 24px; text-align: center;
+            font-size: 11px; color: var(--pixel-cyan); line-height: 2.2;
+        }
+
+        .balls-area {
+            background: var(--pixel-dark); border: 4px solid var(--pixel-purple);
+            padding: 24px 16px; margin-bottom: 20px; text-align: center;
+            min-height: 120px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .balls-label { font-size: 11px; color: var(--pixel-gray); margin-bottom: 16px; }
+        .balls-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 8px; align-items: center; }
+        .balls-row + .balls-row { margin-top: 4px; }
+        .ball-sep { font-size: 16px; color: var(--pixel-gray); margin: 0 4px; }
+        .ball {
+            width: 52px; height: 52px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-family: 'Press Start 2P', monospace;
+            color: #fff; position: relative;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3), inset 0 4px 0 rgba(255,255,255,0.2), 0 4px 0 rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+        }
+        .ball.red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #c0392b); }
+        .ball.blue { background: radial-gradient(circle at 35% 30%, #74b9ff, #2980b9); }
+        .ball.green { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+        .ball.gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); color: #2d3436; }
+        .ball.rolling { animation: ballRoll 0.1s infinite; }
+        .ball.pop-in { animation: ballPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes ballRoll {
+            0% { transform: translateY(-2px); }
+            50% { transform: translateY(2px); }
+            100% { transform: translateY(-2px); }
+        }
+        @keyframes ballPop {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            60% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .count-row {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .count-label { font-size: 13px; color: var(--pixel-gray); }
+        .count-btns { display: flex; gap: 0; }
+        .count-btn {
+            font-family: inherit; font-size: 14px;
+            width: 44px; height: 44px;
+            background: var(--pixel-dark); border: 3px solid var(--pixel-purple);
+            color: var(--pixel-white); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.1s;
+        }
+        .count-btn:first-child { border-radius: 8px 0 0 8px; }
+        .count-btn:last-child { border-radius: 0 8px 8px 0; }
+        .count-btn:hover { background: var(--pixel-purple); }
+        .count-btn:active { transform: scale(0.95); }
+        .count-value {
+            font-family: inherit; font-size: 16px; width: 52px; height: 44px;
+            background: var(--pixel-black); border: 3px solid var(--pixel-cyan);
+            color: var(--pixel-yellow); text-align: center; line-height: 38px;
+        }
+
+        .generate-btn {
+            font-family: inherit; font-size: 14px;
+            width: 100%; padding: 18px;
+            background: radial-gradient(circle at 50% 40%, #ff6b35, #e94560);
+            border: 4px solid var(--pixel-yellow);
+            color: var(--pixel-yellow); cursor: pointer;
+            box-shadow: 0 6px 0 #7a0f24, 0 0 30px rgba(233,69,96,0.4);
+            transition: all 0.1s;
+            letter-spacing: 2px;
+        }
+        .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #7a0f24, 0 0 40px rgba(233,69,96,0.6); }
+        .generate-btn:active { transform: translateY(2px); box-shadow: 0 3px 0 #7a0f24, 0 0 15px rgba(233,69,96,0.3); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .multi-results { margin-top: 20px; }
+        .multi-result-item {
+            background: var(--pixel-dark); border: 3px solid var(--pixel-purple);
+            padding: 12px; margin-bottom: 10px;
+            animation: fadeSlideIn 0.3s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeSlideIn {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .multi-result-item .result-index { font-size: 9px; color: var(--pixel-gray); margin-bottom: 10px; }
+        .mini-ball {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 13px; font-family: 'Press Start 2P', monospace;
+            color: #fff; margin: 2px;
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3), inset 0 3px 0 rgba(255,255,255,0.2);
+        }
+        .mini-ball.red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #c0392b); }
+        .mini-ball.blue { background: radial-gradient(circle at 35% 30%, #74b9ff, #2980b9); }
+        .mini-ball.green { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+        .mini-ball.gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); color: #2d3436; }
+        .mini-sep { display: inline-block; width: 2px; height: 24px; background: var(--pixel-purple); margin: 0 6px; vertical-align: middle; }
+
+        .history-card {
+            background: var(--pixel-dark); border: 3px solid var(--pixel-purple);
+            padding: 16px; margin-top: 24px;
+        }
+        .history-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--pixel-purple);
+        }
+        .history-title { font-size: 12px; color: var(--pixel-magenta); }
+        .history-clear { font-family: inherit; font-size: 10px; background: transparent; border: 2px solid var(--pixel-magenta); color: var(--pixel-magenta); padding: 8px 12px; cursor: pointer; }
+        .history-clear:hover { background: var(--pixel-magenta); color: var(--pixel-white); }
+        .history-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 0; border-bottom: 1px solid rgba(74,25,66,0.5);
+            font-size: 10px;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-type { color: var(--pixel-cyan); min-width: 50px; }
+        .history-nums { color: var(--pixel-white); flex: 1; line-height: 1.6; }
+        .history-time { color: var(--pixel-gray); font-size: 9px; }
+        .empty-hint { text-align: center; color: var(--pixel-gray); font-size: 11px; padding: 16px; }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: var(--pixel-dark); border: 3px solid var(--pixel-cyan);
+            padding: 12px 24px; font-family: inherit; font-size: 11px; color: var(--pixel-cyan);
+            z-index: 10000; transition: transform 0.3s; pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 400px) {
+            .ball { width: 48px; height: 48px; font-size: 16px; }
+            .mini-ball { width: 34px; height: 34px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">▶</div>
+            <span class="logo-text">PIXELPLAY</span>
+        </a>
+        <a href="index.html" class="back-link">← 返回首页</a>
+    </nav>
+
+    <div class="main-content">
+        <h1 class="page-title">🎱 彩票机选模拟</h1>
+        <p class="page-subtitle">纯随机 · 仅供娱乐 · 试试手气</p>
+
+        <div class="lottery-tabs" id="lotteryTabs"></div>
+
+        <div class="rules-bar" id="rulesBar"></div>
+
+        <div class="balls-area" id="ballsArea">
+            <div class="balls-label">👆 选择玩法，点击机选</div>
+            <div class="balls-row" id="mainBalls"></div>
+        </div>
+
+        <div class="count-row">
+            <span class="count-label">注数</span>
+            <div class="count-btns">
+                <button class="count-btn" onclick="changeCount(-1)">-</button>
+                <div class="count-value" id="countValue">1</div>
+                <button class="count-btn" onclick="changeCount(1)">+</button>
+            </div>
+        </div>
+
+        <button class="generate-btn" id="genBtn" onclick="generate()">🎰 随 机 机 选</button>
+
+        <div class="multi-results" id="multiResults"></div>
+
+        <div class="history-card">
+            <div class="history-header">
+                <span class="history-title">📜 机选记录</span>
+                <button class="history-clear" onclick="clearHistory()">清空</button>
+            </div>
+            <div id="historyList"><div class="empty-hint">暂无记录</div></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    const LOTTERIES = [
+        {
+            id: 'ssq', name: '双色球', emoji: '🔴',
+            rules: '红球 6个(1-33) + 蓝球 1个(1-16)',
+            main: { label: '红球', count: 6, max: 33, cls: 'red' },
+            bonus: { label: '蓝球', count: 1, max: 16, cls: 'blue' }
+        },
+        {
+            id: 'dlt', name: '大乐透', emoji: '🏀',
+            rules: '前区 5个(1-35) + 后区 2个(1-12)',
+            main: { label: '前区', count: 5, max: 35, cls: 'red' },
+            bonus: { label: '后区', count: 2, max: 12, cls: 'blue' }
+        },
+        {
+            id: 'fc3d', name: '福彩3D', emoji: '🎲',
+            rules: '3个号码(0-9)，可重复',
+            main: { label: '号码', count: 3, max: 10, cls: 'gold', allowRepeat: true, startFrom: 0 },
+            bonus: null
+        },
+        {
+            id: 'k3', name: '快三', emoji: '🎯',
+            rules: '3个骰子(1-6)，可重复',
+            main: { label: '骰子', count: 3, max: 6, cls: 'gold', allowRepeat: true },
+            bonus: null
+        },
+        {
+            id: 'qlc', name: '七乐彩', emoji: '⭐',
+            rules: '7个号码(1-30)',
+            main: { label: '号码', count: 7, max: 30, cls: 'green' },
+            bonus: null
+        }
+    ];
+
+    let currentLottery = LOTTERIES[0];
+    let ticketCount = 1;
+    let history = [];
+    let isAnimating = false;
+    let audioCtx = null;
+
+    function init() {
+        renderTabs();
+        renderRules();
+        loadHistory();
+        renderHistory();
+    }
+
+    function renderTabs() {
+        const el = document.getElementById('lotteryTabs');
+        el.innerHTML = LOTTERIES.map(l =>
+            '<button class="lottery-tab ' + (l.id === currentLottery.id ? 'active' : '') + '" onclick="selectLottery(\'' + l.id + '\')">' + l.emoji + ' ' + l.name + '</button>'
+        ).join('');
+    }
+
+    function renderRules() {
+        document.getElementById('rulesBar').textContent = currentLottery.emoji + ' ' + currentLottery.rules;
+    }
+
+    function selectLottery(id) {
+        currentLottery = LOTTERIES.find(function(l) { return l.id === id; });
+        renderTabs();
+        renderRules();
+        resetBallsArea();
+    }
+
+    function resetBallsArea() {
+        document.getElementById('ballsArea').innerHTML =
+            '<div class="balls-label">👆 点击下方按钮机选</div><div class="balls-row" id="mainBalls"></div>';
+        document.getElementById('multiResults').innerHTML = '';
+    }
+
+    function changeCount(d) {
+        ticketCount = Math.max(1, Math.min(10, ticketCount + d));
+        document.getElementById('countValue').textContent = ticketCount;
+    }
+
+    function randomNums(count, max, allowRepeat, startFrom) {
+        var start = startFrom || 1;
+        var pool = [];
+        for (var i = start; i < start + max; i++) pool.push(i);
+        if (allowRepeat) {
+            var result = [];
+            for (var j = 0; j < count; j++) {
+                result.push(pool[Math.floor(Math.random() * pool.length)]);
+            }
+            return result.sort(function(a, b) { return a - b; });
+        }
+        for (var k = pool.length - 1; k > 0; k--) {
+            var m = Math.floor(Math.random() * (k + 1));
+            var tmp = pool[k]; pool[k] = pool[m]; pool[m] = tmp;
+        }
+        return pool.slice(0, count).sort(function(a, b) { return a - b; });
+    }
+
+    function generateOneTicket() {
+        var l = currentLottery;
+        var mainNums = randomNums(l.main.count, l.main.max, l.main.allowRepeat, l.main.startFrom);
+        var bonusNums = l.bonus ? randomNums(l.bonus.count, l.bonus.max, false) : [];
+        return { main: mainNums, bonus: bonusNums };
+    }
+
+    async function generate() {
+        if (isAnimating) return;
+        isAnimating = true;
+        document.getElementById('genBtn').disabled = true;
+
+        var tickets = [];
+        for (var i = 0; i < ticketCount; i++) tickets.push(generateOneTicket());
+
+        if (ticketCount === 1) {
+            await animateSingle(tickets[0]);
+        } else {
+            resetBallsArea();
+            document.getElementById('ballsArea').innerHTML = '<div class="balls-label">🎰 摇号中...</div><div class="balls-row" id="mainBalls"></div>';
+            var rollCount = 0;
+            var rollInterval = setInterval(function() {
+                var fake = generateOneTicket();
+                document.getElementById('mainBalls').innerHTML = renderMiniBallsHTML(fake);
+                playTick();
+                rollCount++;
+                if (rollCount > 30) clearInterval(rollInterval);
+            }, 80);
+            await delay(2800);
+            clearInterval(rollInterval);
+            document.getElementById('ballsArea').innerHTML = '<div class="balls-label">✨ 共 ' + ticketCount + ' 注</div>';
+            var container = document.getElementById('multiResults');
+            container.innerHTML = '';
+            for (var j = 0; j < tickets.length; j++) {
+                await delay(200);
+                var div = document.createElement('div');
+                div.className = 'multi-result-item';
+                div.style.animationDelay = (j * 0.1) + 's';
+                div.innerHTML = '<div class="result-index">第 ' + (j + 1) + ' 注</div>' + renderMiniBallsHTML(tickets[j]);
+                container.appendChild(div);
+            }
+        }
+
+        for (var k = 0; k < tickets.length; k++) {
+            addHistory(currentLottery, tickets[k]);
+        }
+        playWin();
+        isAnimating = false;
+        document.getElementById('genBtn').disabled = false;
+    }
+
+    async function animateSingle(ticket) {
+        var l = currentLottery;
+        var totalSlots = l.main.count + (l.bonus ? l.bonus.count : 0);
+        var area = document.getElementById('ballsArea');
+        area.innerHTML = '';
+
+        var ballsRow = document.createElement('div');
+        ballsRow.className = 'balls-row';
+        var ballEls = [];
+        for (var i = 0; i < totalSlots; i++) {
+            if (i === l.main.count && l.bonus) {
+                var sep = document.createElement('span');
+                sep.className = 'ball-sep';
+                sep.textContent = '+';
+                ballsRow.appendChild(sep);
+            }
+            var ball = document.createElement('div');
+            var isBonus = l.bonus && i >= l.main.count;
+            ball.className = 'ball ' + (isBonus ? l.bonus.cls : l.main.cls) + ' rolling';
+            ball.textContent = '?';
+            ball.style.opacity = '0.3';
+            ballsRow.appendChild(ball);
+            ballEls.push(ball);
+        }
+        area.appendChild(ballsRow);
+
+        await delay(300);
+        for (var j = 0; j < totalSlots; j++) {
+            var isBonus = l.bonus && j >= l.main.count;
+            var num = isBonus ? ticket.bonus[j - l.main.count] : ticket.main[j];
+            var el = ballEls[j];
+
+            el.style.opacity = '1';
+            var rollMs = 600 + j * 100;
+            var rollIter = Math.floor(rollMs / 60);
+            for (var r = 0; r < rollIter; r++) {
+                await delay(60);
+                var max = isBonus ? l.bonus.max : l.main.max;
+                var start = isBonus ? 1 : (l.main.startFrom || 1);
+                el.textContent = start + Math.floor(Math.random() * max);
+                if (r % 2 === 0) playTick();
+            }
+
+            el.classList.remove('rolling');
+            el.classList.add('pop-in');
+            el.textContent = padNum(num);
+            playReveal();
+            await delay(350);
+            el.classList.remove('pop-in');
+        }
+    }
+
+    function padNum(n) {
+        return n < 10 ? '0' + n : '' + n;
+    }
+
+    function renderMiniBallsHTML(ticket) {
+        var l = currentLottery;
+        var html = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;justify-content:center">';
+        for (var i = 0; i < ticket.main.length; i++) {
+            if (i > 0) html += '<span style="width:4px"></span>';
+            html += '<span class="mini-ball ' + l.main.cls + '">' + padNum(ticket.main[i]) + '</span>';
+        }
+        if (ticket.bonus && ticket.bonus.length > 0) {
+            html += '<span class="mini-sep"></span>';
+            for (var j = 0; j < ticket.bonus.length; j++) {
+                html += '<span class="mini-ball ' + l.bonus.cls + '">' + padNum(ticket.bonus[j]) + '</span>';
+            }
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function loadHistory() {
+        try { history = JSON.parse(localStorage.getItem('pixelplay_lottery_history') || '[]'); } catch(e) { history = []; }
+    }
+
+    function addHistory(lottery, ticket) {
+        var now = new Date();
+        var timeStr = ((now.getMonth()+1).toString().padStart(2,'0')) + '/' + (now.getDate().toString().padStart(2,'0')) + ' ' + (now.getHours().toString().padStart(2,'0')) + ':' + (now.getMinutes().toString().padStart(2,'0'));
+        var numsStr = ticket.main.map(padNum).join(' ') + (ticket.bonus.length ? ' + ' + ticket.bonus.map(padNum).join(' ') : '');
+        history.unshift({ type: lottery.name, nums: numsStr, time: timeStr });
+        if (history.length > 30) history = history.slice(0, 30);
+        localStorage.setItem('pixelplay_lottery_history', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function renderHistory() {
+        var el = document.getElementById('historyList');
+        if (history.length === 0) { el.innerHTML = '<div class="empty-hint">暂无记录</div>'; return; }
+        el.innerHTML = history.map(function(h) {
+            return '<div class="history-item"><span class="history-type">' + h.type + '</span><span class="history-nums">' + h.nums + '</span><span class="history-time">' + h.time + '</span></div>';
+        }).join('');
+    }
+
+    function clearHistory() {
+        history = [];
+        localStorage.removeItem('pixelplay_lottery_history');
+        renderHistory();
+        showToast('已清空');
+    }
+
+    function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+    }
+    function playTick() {
+        try {
+            var ctx = getAudioCtx();
+            var o = ctx.createOscillator(); var g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'square'; o.frequency.value = 600 + Math.random() * 400;
+            g.gain.value = 0.03;
+            o.start(); o.stop(ctx.currentTime + 0.02);
+        } catch(e) {}
+    }
+    function playReveal() {
+        try {
+            var ctx = getAudioCtx();
+            var o = ctx.createOscillator(); var g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'square'; o.frequency.value = 1200;
+            g.gain.value = 0.06; g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+            o.start(); o.stop(ctx.currentTime + 0.15);
+        } catch(e) {}
+    }
+    function playWin() {
+        try {
+            var ctx = getAudioCtx();
+            [523, 659, 784, 1047].forEach(function(freq, i) {
+                var o = ctx.createOscillator(); var g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'square'; o.frequency.value = freq;
+                g.gain.value = 0.05; g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.25);
+                o.start(ctx.currentTime + i*0.1); o.stop(ctx.currentTime + i*0.1 + 0.25);
+            });
+        } catch(e) {}
+    }
+
+    function delay(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function() { t.classList.remove('show'); }, 2000);
+    }
+
+    init();
+    </script>
+</body>
+</html>
