@@ -161,14 +161,13 @@
         .date-inputs {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
 
         .date-field {
-            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            min-width: 60px;
         }
 
         .field-label {
@@ -183,9 +182,8 @@
             background: var(--pixel-black);
             border: 2px solid var(--pixel-purple);
             color: var(--pixel-white);
-            padding: 16px 10px;
+            padding: 10px 8px;
             text-align: center;
-            width: 100%;
             outline: none;
             transition: border-color 0.15s;
         }
@@ -193,11 +191,11 @@
         .field-input:focus { border-color: var(--pixel-cyan); }
         .field-input::placeholder { color: var(--pixel-gray); font-size: 12px; }
 
-        /* 年份输入稍大 */
-        .year-input { max-width: 120px; flex: 0 0 120px; font-size: 20px; padding: 16px 12px; }
-
-        /* 月/日输入也有最小宽度 */
-        .date-field:not(.year-field) .field-input { min-width: 70px; }
+        /* 年份宽，月日窄 */
+        .year-input { width: 120px; font-size: 20px; }
+        .month-input, .day-input { width: 72px; font-size: 18px; }
+        /* 月/日字段固定宽度 */
+        .date-field.month-field, .date-field.day-field { width: auto; flex: none; }
 
         /* 按钮 */
         .action-btn {
@@ -340,8 +338,9 @@
             .container { padding: 80px 12px 40px; }
             .page-title { font-size: 18px; }
             .mode-tab { font-size: 12px; padding: 12px 14px; }
-            .field-input { font-size: 18px; padding: 16px 8px; }
-            .year-input { max-width: 100px; flex: 0 0 100px; font-size: 18px; }
+            .field-input { font-size: 16px; padding: 10px 6px; }
+            .year-input { width: 110px; font-size: 18px; }
+            .month-input, .day-input { width: 66px; font-size: 16px; }
             .result-big { font-size: 22px; }
             .action-btn { font-size: 14px; padding: 18px; }
             .today-info { flex-direction: column; align-items: center; }
@@ -353,9 +352,9 @@
 
         @media (max-width: 360px) {
             .date-inputs { gap: 6px; }
-            .year-input { max-width: 88px; flex: 0 0 88px; font-size: 16px; }
-            .field-input { font-size: 16px; padding: 14px 4px; }
-            .date-field { min-width: 50px; }
+            .year-input { width: 96px; font-size: 16px; }
+            .month-input, .day-input { width: 60px; font-size: 16px; }
+            .field-input { padding: 10px 4px; }
         }
     </style>
 </head>
@@ -531,22 +530,22 @@
 
         switch (currentMode) {
             case 'diff':
-                html = '<div class="date-row"><div class="row-label">📅 起始日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="y1" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="m1" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="d1" placeholder="1" min="1" max="31"></div></div></div><div class="date-row"><div class="row-label">📅 结束日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="y2" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="m2" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="d2" placeholder="1" min="1" max="31"></div></div></div><div class="quick-holiday"><div class="quick-holiday-title">⚡ 快捷节日</div><div class="quick-holiday-btns" id="diffHolidayBtns"></div></div>';
+                html = '<div class="date-row"><div class="row-label">📅 起始日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="y1" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="m1" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="d1" placeholder="1" min="1" max="31"></div></div></div><div class="date-row"><div class="row-label">📅 结束日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="y2" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="m2" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="d2" placeholder="1" min="1" max="31"></div></div></div><div class="quick-holiday"><div class="quick-holiday-title">⚡ 快捷节日</div><div class="quick-holiday-btns" id="diffHolidayBtns"></div></div>';
                 break;
             case 'countdown':
-                html = '<div class="date-row"><div class="row-label">🎯 目标日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="cy" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="cm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="cd" placeholder="1" min="1" max="31"></div></div></div><div class="quick-holiday"><div class="quick-holiday-title">🎉 快捷节日</div><div class="quick-holiday-btns" id="countdownHolidayBtns"></div></div>';
+                html = '<div class="date-row"><div class="row-label">🎯 目标日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="cy" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="cm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="cd" placeholder="1" min="1" max="31"></div></div></div><div class="quick-holiday"><div class="quick-holiday-title">🎉 快捷节日</div><div class="quick-holiday-btns" id="countdownHolidayBtns"></div></div>';
                 break;
             case 'calc':
-                html = '<div class="date-row"><div class="row-label">📅 起始日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="aky" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="akm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="akd" placeholder="1" min="1" max="31"></div></div></div><div class="date-row"><div class="row-label">➕➖ 加减天数</div><div class="date-inputs" style="align-items:center"><div class="date-field" style="flex:1"><input type="number" class="field-input" id="addDays" placeholder="输入天数，如100" style="text-align:center" value="100" min="-9999" max="9999"></div></div></div>';
+                html = '<div class="date-row"><div class="row-label">📅 起始日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="aky" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="akm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="akd" placeholder="1" min="1" max="31"></div></div></div><div class="date-row"><div class="row-label">➕➖ 加减天数</div><div class="date-inputs" style="align-items:center"><div class="date-field" style="flex:1"><input type="number" class="field-input" id="addDays" placeholder="输入天数，如100" style="text-align:center" value="100" min="-9999" max="9999"></div></div></div>';
                 break;
             case 'weekday':
-                html = '<div class="date-row"><div class="row-label">📅 查询日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="wy" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="wm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="wd" placeholder="1" min="1" max="31"></div></div></div>';
+                html = '<div class="date-row"><div class="row-label">📅 查询日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="wy" placeholder="2026" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="wm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="wd" placeholder="1" min="1" max="31"></div></div></div>';
                 break;
             case 'age':
-                html = '<div class="date-row"><div class="row-label">🎂 出生日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="by" placeholder="2000" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="bm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="bd" placeholder="1" min="1" max="31"></div></div></div><div class="birthday-tip">💡 输入出生日期，计算精确年龄</div>';
+                html = '<div class="date-row"><div class="row-label">🎂 出生日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="by" placeholder="2000" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="bm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="bd" placeholder="1" min="1" max="31"></div></div></div><div class="birthday-tip">💡 输入出生日期，计算精确年龄</div>';
                 break;
             case 'anniversary':
-                html = '<div class="date-row"><div class="row-label">💑 纪念日日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="any" placeholder="2020" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input" id="anm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input" id="and" placeholder="1" min="1" max="31"></div></div></div>';
+                html = '<div class="date-row"><div class="row-label">💑 纪念日日期</div><div class="date-inputs"><div class="date-field"><label class="field-label">年</label><input type="number" class="field-input year-input" id="any" placeholder="2020" min="1" max="9999"></div><div class="date-field"><label class="field-label">月</label><input type="number" class="field-input month-input" id="anm" placeholder="1" min="1" max="12"></div><div class="date-field"><label class="field-label">日</label><input type="number" class="field-input day-input" id="and" placeholder="1" min="1" max="31"></div></div></div>';
                 break;
         }
 
