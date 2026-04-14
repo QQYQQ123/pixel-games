@@ -67,47 +67,59 @@
             padding: 20px;
             margin-bottom: 20px;
         }
-        .conv-row {
-            display: flex; align-items: stretch; gap: 10px;
-            margin-bottom: 16px;
-        }
-        .conv-from { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-        .conv-swap { flex-shrink: 0; display: flex; align-items: center; }
 
-        .conv-label { font-size: 13px; color: var(--pixel-gray); margin-bottom: 4px; }
-
-        .input-wrap {
-            display: flex; align-items: center; gap: 8px;
+        /* 大大输入框 */
+        .big-input-wrap {
             background: var(--pixel-black);
             border: 2px solid var(--pixel-purple);
-            padding: 14px 14px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
             transition: border-color 0.15s;
-            min-height: 52px;
         }
-        .input-wrap:focus-within { border-color: var(--pixel-cyan); }
-
-        .num-input {
-            flex: 1; font-family: inherit; font-size: 22px;
+        .big-input-wrap:focus-within { border-color: var(--pixel-cyan); }
+        .big-num-input {
+            width: 100%; font-family: inherit; font-size: 26px;
             background: none; border: none; color: var(--pixel-white);
-            outline: none; min-width: 0; width: 100%;
+            outline: none;
         }
-        .num-input::placeholder { color: var(--pixel-gray); font-size: 14px; }
+        .big-num-input::placeholder { color: var(--pixel-gray); font-size: 18px; }
 
-        .unit-select {
-            font-family: inherit; font-size: 13px;
-            background: var(--pixel-purple); border: none;
-            color: var(--pixel-white); padding: 8px 12px; cursor: pointer;
+        /* 单位选择 + 结果行 */
+        .unit-result-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px;
         }
+        .unit-section { flex: 1; }
+        .conv-label { font-size: 13px; color: var(--pixel-gray); margin-bottom: 8px; }
+        .unit-select-full {
+            width: 100%; font-family: inherit; font-size: 14px;
+            background: var(--pixel-black); border: 2px solid var(--pixel-purple);
+            color: var(--pixel-white); padding: 12px 14px; cursor: pointer; outline: none;
+        }
+        .unit-select-full:focus { border-color: var(--pixel-cyan); }
+        .unit-select-full option { background: var(--pixel-dark); }
 
         /* 交换按钮 */
         .swap-btn {
-            width: 60px; height: 60px;
+            width: 56px; height: 56px; flex-shrink: 0;
             background: var(--pixel-magenta); border: 3px solid var(--pixel-magenta);
-            color: var(--pixel-white); font-size: 22px; cursor: pointer;
+            color: var(--pixel-white); font-size: 20px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.15s; flex-shrink: 0;
+            transition: all 0.15s;
         }
         .swap-btn:hover { background: var(--pixel-cyan); border-color: var(--pixel-cyan); color: var(--pixel-black); transform: rotate(180deg); }
+
+        /* 结果大字显示 */
+        .result-display {
+            background: var(--pixel-black);
+            border: 2px solid var(--pixel-yellow);
+            padding: 20px;
+            text-align: center;
+        }
+        .result-number {
+            font-size: 28px; color: var(--pixel-yellow); font-family: 'Press Start 2P', monospace;
+            word-break: break-all;
+        }
 
         /* 全部结果 */
         .results-title { font-size: 14px; color: var(--pixel-cyan); margin-bottom: 16px; }
@@ -168,24 +180,24 @@
             .page-title { font-size: 18px; }
             .page-sub { font-size: 12px; }
             .cat-tab { font-size: 13px; padding: 10px 14px; }
-            /* 手机上两个输入框上下排列 */
-            .conv-row { flex-direction: column; }
-            .swap-btn {
-                align-self: center;
-                width: 56px; height: 56px;
-                font-size: 22px;
-            }
-            .conv-from { width: 100%; }
-            .input-wrap { min-height: 56px; padding: 14px 16px; }
-            .num-input { font-size: 20px; }
-            .unit-select { font-size: 13px; padding: 8px 10px; }
+            /* 手机上单位选择和按钮上下排列 */
+            .unit-result-row { flex-direction: column; }
+            .unit-section { width: 100%; }
+            .swap-btn { width: 100%; height: 52px; font-size: 18px; margin: 8px 0; }
+            .big-input-wrap { padding: 18px; }
+            .big-num-input { font-size: 24px; }
+            .result-display { padding: 24px; }
+            .result-number { font-size: 22px; }
+            .unit-select-full { font-size: 16px; padding: 14px; }
             .results-box { padding: 16px; }
-            .result-row { font-size: 13px; padding: 12px 0; }
-            .quick-btn { font-size: 13px; padding: 12px 14px; }
+            .result-row { font-size: 13px; padding: 14px 0; }
+            .quick-btn { font-size: 14px; padding: 12px 14px; }
         }
         @media (max-width: 360px) {
             .cat-tab { font-size: 12px; padding: 9px 12px; }
             .page-title { font-size: 16px; }
+            .big-num-input { font-size: 20px; }
+            .result-number { font-size: 18px; }
         }
     </style>
 </head>
@@ -208,24 +220,29 @@
 
         <!-- 换算区 -->
         <div class="converter-box">
-            <div class="conv-row">
-                <div class="conv-from">
+            <!-- 大大输入框 -->
+            <div class="big-input-wrap">
+                <input type="number" class="big-num-input" id="numInput" placeholder="输入数值" oninput="convert()">
+            </div>
+
+            <!-- 单位选择 + 结果 -->
+            <div class="unit-result-row">
+                <div class="unit-section">
                     <div class="conv-label" id="fromLabel">从</div>
-                    <div class="input-wrap">
-                        <input type="number" class="num-input" id="numInput" placeholder="输入数值..." oninput="convert()" onkeydown="convert()">
-                        <select class="unit-select" id="fromUnit" onchange="convert()"></select>
-                    </div>
+                    <select class="unit-select-full" id="fromUnit" onchange="convert()"></select>
                 </div>
 
                 <button class="swap-btn" id="swapBtn" onclick="swapUnits()" title="交换单位">⇄</button>
 
-                <div class="conv-from">
+                <div class="unit-section">
                     <div class="conv-label" id="toLabel">转换为</div>
-                    <div class="input-wrap">
-                        <input type="text" class="num-input" id="toInput" placeholder="结果" readonly>
-                        <select class="unit-select" id="toUnit" onchange="convert()"></select>
-                    </div>
+                    <select class="unit-select-full" id="toUnit" onchange="convert()"></select>
                 </div>
+            </div>
+
+            <!-- 结果显示 -->
+            <div class="result-display" id="resultDisplay">
+                <div class="result-number" id="toInput">—</div>
             </div>
         </div>
 
@@ -522,8 +539,8 @@
         var toInput = document.getElementById('toInput');
 
         if (isNaN(num) || num === '') {
-            toInput.value = '';
-            document.getElementById('resultsList').innerHTML = '<div style="color:var(--pixel-gray);font-size:11px;text-align:center;padding:20px;">输入数字开始换算</div>';
+            toInput.textContent = '—';
+            document.getElementById('resultsList').innerHTML = '<div style="color:var(--pixel-gray);font-size:13px;text-align:center;padding:24px;">输入数字开始换算</div>';
             return;
         }
 
@@ -541,7 +558,7 @@
         }
 
         // 显示主结果
-        toInput.value = formatNum(result);
+        toInput.textContent = formatNum(result);
 
         // 显示全部结果
         renderAllResults(num, fromIdx);
