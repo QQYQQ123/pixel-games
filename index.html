@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PixelPlay - 复古像素小游戏</title>
+    
+    <!-- 像素字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========== CSS Variables - 复古配色 ========== */
+        :root {
+            --pixel-black: #1a1a2e;
+            --pixel-dark: #16213e;
+            --pixel-purple: #4a1942;
+            --pixel-magenta: #e94560;
+            --pixel-cyan: #00fff5;
+            --pixel-yellow: #ffdd00;
+            --pixel-green: #39ff14;
+            --pixel-orange: #ff6b35;
+            --pixel-white: #f1f1f1;
+            --pixel-gray: #6b7280;
+            
+            --scanline-opacity: 0.03;
+            --glow-intensity: 0.8;
+        }
+        
+        /* ========== Reset & Base ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: var(--pixel-black);
+            color: var(--pixel-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+            image-rendering: pixelated;
+        }
+        
+        /* ========== CRT 扫描线效果 ========== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, var(--scanline-opacity)) 0px,
+                rgba(0, 0, 0, var(--scanline-opacity)) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+        
+        /* ========== 像素化边框 ========== */
+        .pixel-border {
+            border: 4px solid var(--pixel-cyan);
+            box-shadow: 
+                inset -4px -4px 0 0 var(--pixel-dark),
+                inset 4px 4px 0 0 rgba(255,255,255,0.1),
+                0 0 0 4px var(--pixel-black);
+        }
+        
+        /* ========== 顶部导航 ========== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: linear-gradient(180deg, var(--pixel-dark) 0%, var(--pixel-black) 100%);
+            border-bottom: 4px solid var(--pixel-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--pixel-white);
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--pixel-magenta);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            animation: pixel-pulse 1s infinite;
+        }
+        
+        .logo-text {
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-shadow: 
+                2px 2px 0 var(--pixel-cyan),
+                4px 4px 0 var(--pixel-purple);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-link {
+            color: var(--pixel-white);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 10px 16px;
+            background: transparent;
+            border: 2px solid transparent;
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+        
+        .nav-link:hover {
+            background: var(--pixel-cyan);
+            color: var(--pixel-black);
+            border-color: var(--pixel-cyan);
+            text-shadow: none;
+        }
+        
+        .nav-link.active {
+            background: var(--pixel-magenta);
+            border-color: var(--pixel-magenta);
+            color: var(--pixel-white);
+        }
+        
+        /* 移动端菜单按钮 */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: 2px solid var(--pixel-cyan);
+            color: var(--pixel-cyan);
+            width: 40px;
+            height: 40px;
+            font-family: inherit;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        /* ========== 英雄区 ========== */
+        .hero {
+            margin-top: 70px;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 动态背景网格 */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(var(--pixel-purple) 1px, transparent 1px),
+                linear-gradient(90deg, var(--pixel-purple) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.1;
+            animation: grid-move 20s linear infinite;
+        }
+        
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .hero-content {
+            text-align: center;
+            z-index: 1;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hero-title {
+            font-size: clamp(20px, 5vw, 48px);
+            margin-bottom: 20px;
+            text-shadow: 
+                0 0 10px var(--pixel-cyan),
+                0 0 20px var(--pixel-cyan),
+                0 0 30px var(--pixel-cyan);
+            animation: glitch 3s infinite;
+        }
+        
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-2px, 2px); }
+            94% { transform: translate(2px, -2px); }
+            96% { transform: translate(-2px, -2px); }
+            98% { transform: translate(2px, 2px); }
+        }
+        
+        .hero-subtitle {
+            font-size: clamp(10px, 2.5vw, 14px);
+            color: var(--pixel-gray);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        
+        /* 装饰性像素元素 */
+        .pixel-stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .star {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--pixel-yellow);
+            animation: twinkle 2s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* ========== 游戏分类标签 ========== */
+        .categories {
+            padding: 20px;
+            background: var(--pixel-dark);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            font-size: clamp(12px, 3vw, 18px);
+            margin-bottom: 24px;
+            color: var(--pixel-yellow);
+            text-shadow: 2px 2px 0 var(--pixel-purple);
+        }
+        
+        .category-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .category-tag {
+            background: transparent;
+            border: 2px solid var(--pixel-gray);
+            color: var(--pixel-gray);
+            font-family: inherit;
+            font-size: 12px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+        
+        .category-tag:hover {
+            border-color: var(--pixel-cyan);
+            color: var(--pixel-cyan);
+            background: rgba(0, 255, 245, 0.1);
+        }
+        
+        /* ========== 游戏网格 ========== */
+        .games-section {
+            padding: 40px 20px;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        
+        /* 游戏卡片 */
+        .game-card {
+            background: var(--pixel-dark);
+            border: 4px solid var(--pixel-purple);
+            position: relative;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 4px solid var(--pixel-cyan);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        
+        .game-card:hover {
+            transform: translate(-4px, -4px);
+            border-color: var(--pixel-cyan);
+        }
+        
+        .game-card:hover::before {
+            opacity: 1;
+        }
+        
+        .game-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: var(--pixel-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-thumbnail canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 手机适配标识 */
+        .mobile-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--pixel-green);
+            color: var(--pixel-black);
+            font-size: 10px;
+            padding: 4px 8px;
+        }
+        
+        .game-info {
+            padding: 16px;
+        }
+        
+        .game-title {
+            font-size: 14px;
+            color: var(--pixel-white);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .game-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 10px;
+            color: var(--pixel-gray);
+        }
+        
+        .game-tag {
+            background: var(--pixel-purple);
+            color: var(--pixel-white);
+            padding: 4px 8px;
+        }
+        
+        /* ========== 页脚 ========== */
+        .footer {
+            padding: 20px;
+            background: var(--pixel-black);
+            border-top: 4px solid var(--pixel-purple);
+            text-align: center;
+        }
+        
+        .footer-copy {
+            font-size: 10px;
+            color: var(--pixel-gray);
+        }
+        
+        /* ========== 动画 ========== */
+        @keyframes pixel-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--pixel-magenta); }
+            50% { box-shadow: 0 0 20px 4px var(--pixel-magenta); }
+        }
+        
+        /* ========== 响应式设计 ========== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: var(--pixel-dark);
+                flex-direction: column;
+                padding: 20px;
+                border-bottom: 4px solid var(--pixel-cyan);
+            }
+            
+            .nav-links.active {
+                display: flex;
+            }
+            
+            .menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 16px;
+            }
+            
+            .game-info {
+                padding: 12px;
+            }
+            
+            .game-title {
+                font-size: 10px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* ========== 滚动条样式 ========== */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--pixel-black);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--pixel-purple);
+            border: 2px solid var(--pixel-black);
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--pixel-cyan);
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">▶</div>
+            <span class="logo-text">PIXELPLAY</span>
+        </a>
+        
+        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+        
+        <div class="nav-links" id="navLinks">
+            <a href="index.html" class="nav-link active">首页</a>
+            <a href="#games" class="nav-link">游戏</a>
+            <a href="#" class="nav-link" id="rankLink">🏆 排行榜</a>
+            <a href="#" class="nav-link" id="userLink">👤 设置</a>
+        </div>
+    </nav>
+    
+    <!-- 英雄区 -->
+    <section class="hero">
+        <div class="pixel-stars" id="pixelStars"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">🎮 PIXELPLAY</h1>
+            <p class="hero-subtitle">你的摸鱼空间</p>
+        </div>
+    </section>
+    
+    <!-- 游戏列表 -->
+    <section class="games-section" id="games">
+        <div class="container">
+            <h2 class="section-title">◆ 游戏列表</h2>
+            <div class="games-grid" id="gamesGrid">
+                <!-- 游戏卡片由 JS 动态生成 -->
+            </div>
+        </div>
+    </section>
+    
+    <!-- 工具列表 -->
+    <section class="games-section" id="tools">
+        <div class="container">
+            <h2 class="section-title">◆ 工具类</h2>
+            <div class="games-grid" id="toolsGrid">
+                <!-- 工具卡片由 JS 动态生成 -->
+            </div>
+        </div>
+    </section>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-copy">© 2026 PixelPlay</p>
+    </footer>
+    
+    <script src="js/common.js"></script>
+    <script>
+        // ========== 游戏数据 ==========
+        const games = [
+            {
+                id: 'breakout',
+                title: '打砖块',
+                category: 'action',
+                tags: ['休闲', '经典'],
+                color: '#ff6b35',
+                mobile: true,
+                file: 'breakout.html',
+                icon: '🧱'
+            },
+            {
+                id: '2048',
+                title: '2048',
+                category: 'puzzle',
+                tags: ['益智', '数字'],
+                color: '#edc22e',
+                mobile: true,
+                file: '2048.html',
+                icon: '🔢'
+            },
+            {
+                id: 'memory',
+                title: '记忆翻牌',
+                category: 'puzzle',
+                tags: ['益智', '记忆'],
+                color: '#9b59b6',
+                mobile: true,
+                file: 'memory.html',
+                icon: '🃏'
+            },
+            {
+                id: 'guess',
+                title: '猜数字',
+                category: 'casual',
+                tags: ['休闲', '数字'],
+                color: '#3498db',
+                mobile: true,
+                file: 'guess.html',
+                icon: '🎯'
+            },
+            {
+                id: 'shooter',
+                title: '打飞机',
+                category: 'action',
+                tags: ['动作', '射击'],
+                color: '#e94560',
+                mobile: true,
+                file: 'shooter.html',
+                icon: '✈️'
+            }
+        ];
+        
+        // ========== 工具数据 ==========
+        const tools = [
+            {
+                id: 'avatar',
+                title: '像素头像',
+                tags: ['工具', '创意'],
+                color: '#e94560',
+                mobile: true,
+                file: 'avatar.html',
+                icon: '👾'
+            },
+            {
+                id: 'meme',
+                title: '表情包',
+                tags: ['工具', '趣味'],
+                color: '#ff6b35',
+                mobile: true,
+                file: 'meme.html',
+                icon: '🎭'
+            },
+            {
+                id: 'salary',
+                title: '薪资计算器',
+                tags: ['工具', '实用'],
+                color: '#ffdd00',
+                mobile: true,
+                file: 'salary.html',
+                icon: '💰'
+            },
+            {
+                id: 'pixelart',
+                title: '像素画板',
+                tags: ['工具', '创意'],
+                color: '#9b59b6',
+                mobile: true,
+                file: 'pixelart.html',
+                icon: '🎨'
+            },
+            {
+                id: 'wheel',
+                title: '决策转盘',
+                tags: ['工具', '趣味'],
+                color: '#e94560',
+                mobile: true,
+                file: 'wheel.html',
+                icon: '🎡'
+            },
+            {
+                id: 'lottery',
+                title: '彩票机选',
+                tags: ['工具', '趣味'],
+                color: '#00fff5',
+                mobile: true,
+                file: 'lottery.html',
+                icon: '🔴'
+            }
+        ];
+        
+        // ========== 渲染游戏卡片 ==========
+        function renderGames() {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+            
+            games.forEach((game, index) => {
+                const card = document.createElement('a');
+                const gameFile = game.file || `game.html?id=${game.id}`;
+                card.href = gameFile;
+                card.className = 'game-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                
+                card.innerHTML = `
+                    <div class="game-thumbnail" style="background: ${game.color}20">
+                        <canvas id="preview-${game.id}" width="280" height="158"></canvas>
+                        ${game.mobile ? '<span class="mobile-badge">📱 手机</span>' : ''}
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">${game.title}</h3>
+                        <div class="game-meta">
+                            ${game.tags.map(tag => `<span class="game-tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+                
+                // 绘制预览动画
+                drawGamePreview(game.id, game.color);
+            });
+        }
+        
+        // ========== 游戏预览动画 ==========
+        function drawGamePreview(gameId, color) {
+            const canvas = document.getElementById(`preview-${gameId}`);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            let frame = 0;
+            
+            function animate() {
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, w, h);
+                
+                // 网格背景
+                ctx.strokeStyle = color + '20';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < w; i += 20) {
+                    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+                }
+                for (let i = 0; i < h; i += 20) {
+                    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
+                }
+                
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 12;
+                
+                switch(gameId) {
+                    case 'breakout': drawBreakoutPreview(ctx, w, h, color, frame); break;
+                    case '2048': draw2048Preview(ctx, w, h, color, frame); break;
+                    case 'memory': drawMemoryPreview(ctx, w, h, color, frame); break;
+                    case 'guess': drawGuessPreview(ctx, w, h, color, frame); break;
+                    case 'shooter': drawShooterPreview(ctx, w, h, color, frame); break;
+                    }
+                
+                ctx.shadowBlur = 0;
+                frame++;
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        // --- 打砖块预览：球弹跳 + 砖块排列 + 挡板 ---
+        function drawBreakoutPreview(ctx, w, h, color, f) {
+            const bw = 28, bh = 12, gap = 3;
+            const cols = Math.floor((w - 20) / (bw + gap));
+            const startX = (w - cols * (bw + gap) + gap) / 2;
+            const brickColors = ['#e94560', '#ff6b35', '#ffdd00', '#39ff14', '#00fff5'];
+            
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = startX + c * (bw + gap);
+                    const y = 12 + r * (bh + gap);
+                    // 交替闪烁
+                    const flash = (c + r + Math.floor(f / 30)) % 5 === 0;
+                    if (!flash) {
+                        ctx.fillStyle = brickColors[r % brickColors.length];
+                        ctx.fillRect(x, y, bw, bh);
+                    }
+                }
+            }
+            
+            // 球
+            const bx = w/2 + Math.cos(f * 0.04) * 60;
+            const by = h/2 + Math.sin(f * 0.06) * 40;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(bx - 4, by - 4, 8, 8);
+            
+            // 挡板
+            const px = w/2 + Math.sin(f * 0.03) * 50 - 25;
+            ctx.fillStyle = color;
+            ctx.fillRect(px, h - 22, 50, 8);
+        }
+        
+        // --- 2048预览：数字方块滑动合并 ---
+        function draw2048Preview(ctx, w, h, color, f) {
+            const tileSize = 36, gap = 4;
+            const gridW = 4, gridH = 4;
+            const totalW = gridW * tileSize + (gridW - 1) * gap;
+            const totalH = gridH * tileSize + (gridH - 1) * gap;
+            const ox = (w - totalW) / 2, oy = (h - totalH) / 2;
+            
+            // 网格背景
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(ox - 4, oy - 4, totalW + 8, totalH + 8);
+            
+            const tiles = [
+                {r:0,c:0,v:2}, {r:0,c:1,v:4}, {r:0,c:2,v:8}, {r:0,c:3,v:16},
+                {r:1,c:0,v:32}, {r:1,c:1,v:64}, {r:1,c:2,v:128}, {r:1,c:3,v:256},
+                {r:2,c:0,v:512}, {r:2,c:1,v:1024}, {r:2,c:2,v:2048}, {r:2,c:3,v:0},
+                {r:3,c:0,v:0}, {r:3,c:1,v:0}, {r:3,c:2,v:0}, {r:3,c:3,v:0}
+            ];
+            
+            // 每隔一段时间"滑动"效果 - 改变高亮位置
+            const highlight = Math.floor(f / 20) % 16;
+            
+            tiles.forEach((t, i) => {
+                const x = ox + t.c * (tileSize + gap);
+                const y = oy + t.r * (tileSize + gap);
+                if (t.v === 0) return;
+                
+                // 闪烁高亮
+                if (i === highlight) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                    ctx.fillStyle = '#fff';
+                } else {
+                    const brightness = Math.min(255, 80 + t.v * 0.08);
+                    ctx.fillStyle = `rgb(${brightness}, ${brightness * 0.8}, ${brightness * 0.4})`;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                    ctx.fillStyle = t.v >= 128 ? '#fff' : '#333';
+                }
+                
+                ctx.font = `${t.v >= 1024 ? '9' : t.v >= 100 ? '10' : '12'}px "Press Start 2P"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(t.v, x + tileSize/2, y + tileSize/2 + 1);
+            });
+        }
+        
+        // --- 记忆翻牌预览：翻牌动画 ---
+        function drawMemoryPreview(ctx, w, h, color, f) {
+            const cols = 4, rows = 3;
+            const cardW = 40, cardH = 48, gap = 8;
+            const totalW = cols * cardW + (cols-1) * gap;
+            const totalH = rows * cardH + (rows-1) * gap;
+            const ox = (w - totalW) / 2, oy = (h - totalH) / 2;
+            
+            const emojis = ['🎮', '⭐', '💎', '🔥', '🎯', '🎪'];
+            const flipCycle = 60; // 每60帧翻一次
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const idx = r * cols + c;
+                    const x = ox + c * (cardW + gap);
+                    const y = oy + r * (cardH + gap);
+                    
+                    // 翻转动画：用缩放模拟
+                    const phase = ((f + idx * 8) % flipCycle) / flipCycle;
+                    const scaleX = Math.abs(Math.cos(phase * Math.PI));
+                    
+                    const showFace = phase > 0.5;
+                    
+                    ctx.save();
+                    ctx.translate(x + cardW/2, y + cardH/2);
+                    ctx.scale(Math.max(0.05, scaleX), 1);
+                    
+                    // 卡片
+                    if (showFace) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(-cardW/2, -cardH/2, cardW, cardH);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '18px serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(emojis[idx % emojis.length], 0, 0);
+                    } else {
+                        ctx.fillStyle = '#2a2a5a';
+                        ctx.fillRect(-cardW/2, -cardH/2, cardW, cardH);
+                        // 花纹
+                        ctx.strokeStyle = color + '60';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(-cardW/2 + 4, -cardH/2 + 4, cardW - 8, cardH - 8);
+                        ctx.fillStyle = color;
+                        ctx.font = '14px "Press Start 2P"';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('?', 0, 0);
+                    }
+                    
+                    ctx.restore();
+                }
+            }
+        }
+        
+        // --- 猜数字预览：滚动的数字 + 提示箭头 ---
+        function drawGuessPreview(ctx, w, h, color, f) {
+            // 大数字滚动
+            const digits = ['1','2','3','4','5','6','7','8','9','0'];
+            const d1 = digits[Math.floor(f / 8) % digits.length];
+            const d2 = digits[Math.floor(f / 12 + 3) % digits.length];
+            const d3 = digits[Math.floor(f / 6 + 7) % digits.length];
+            const d4 = digits[Math.floor(f / 10 + 1) % digits.length];
+            const num = d1 + d2 + d3 + d4;
+            
+            // 上下滚动效果
+            const scrollY = (f * 3) % 40;
+            
+            ctx.fillStyle = color;
+            ctx.font = '32px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(num, w/2, h/2 - 10);
+            
+            // 上下箭头动画
+            ctx.fillStyle = '#39ff14';
+            ctx.font = '16px "Press Start 2P"';
+            const arrowOffset = Math.sin(f * 0.08) * 5;
+            ctx.fillText('▲', w/2, h/2 - 40 + arrowOffset);
+            ctx.fillText('▼', w/2, h/2 + 30 - arrowOffset);
+            
+            // 提示文字闪烁
+            if (Math.floor(f / 30) % 2 === 0) {
+                ctx.fillStyle = '#ffdd00';
+                ctx.font = '8px "Press Start 2P"';
+                ctx.fillText('GUESS THE NUMBER', w/2, h - 18);
+            }
+            
+            // 装饰：左右猜测记录
+            ctx.fillStyle = color + '60';
+            ctx.font = '7px "Press Start 2P"';
+            ctx.textAlign = 'left';
+            ctx.fillText('1234 ▲', 15, 30);
+            ctx.fillText('5678 ▼', 15, 44);
+            ctx.textAlign = 'right';
+            ctx.fillText('2345 ▲', w - 15, 30);
+            ctx.fillText('6789 ▼', w - 15, 44);
+        }
+        
+        // --- 打飞机预览：飞机 + 子弹 + 敌机 ---
+        function drawShooterPreview(ctx, w, h, color, f) {
+            // 玩家飞机（像素风格）
+            const px = w/2 + Math.sin(f * 0.04) * 40;
+            const py = h - 35;
+            
+            // 飞机身体
+            ctx.fillStyle = '#00fff5';
+            ctx.fillRect(px - 3, py - 8, 6, 16);
+            ctx.fillRect(px - 10, py + 2, 20, 4);
+            ctx.fillRect(px - 6, py - 4, 12, 4);
+            
+            // 翅尖
+            ctx.fillStyle = color;
+            ctx.fillRect(px - 14, py + 4, 4, 6);
+            ctx.fillRect(px + 10, py + 4, 4, 6);
+            
+            // 子弹
+            ctx.fillStyle = '#ffdd00';
+            for (let i = 0; i < 3; i++) {
+                const by = (py - 20 - i * 30 - f * 3 % 30 + 60) % 60 + 10;
+                ctx.fillRect(px - 1, py - by, 2, 6);
+            }
+            
+            // 敌机（从上往下移动）
+            const enemies = [
+                {x: 60, speed: 0.7, delay: 0},
+                {x: 120, speed: 0.5, delay: 20},
+                {x: 200, speed: 0.9, delay: 10},
+                {x: 80, speed: 0.6, delay: 35},
+                {x: 180, speed: 0.8, delay: 25}
+            ];
+            
+            enemies.forEach(e => {
+                const ey = ((f * e.speed + e.delay) % (h + 20)) - 10;
+                // 敌机像素
+                ctx.fillStyle = '#e94560';
+                ctx.fillRect(e.x - 6, ey, 12, 8);
+                ctx.fillRect(e.x - 10, ey + 4, 20, 4);
+                // 窗口
+                ctx.fillStyle = '#ffdd00';
+                ctx.fillRect(e.x - 2, ey + 1, 4, 4);
+            });
+            
+            // 爆炸粒子（随机闪烁）
+            ctx.fillStyle = '#ff6b35';
+            for (let i = 0; i < 6; i++) {
+                const ex = (f * 3 + i * 47) % w;
+                const ey = (f * 2 + i * 31) % (h - 40);
+                const size = (Math.sin(f * 0.2 + i) + 1) * 2;
+                ctx.fillRect(ex, ey, size, size);
+            }
+            
+            // 分数
+            ctx.fillStyle = '#fff';
+            ctx.font = '8px "Press Start 2P"';
+            ctx.textAlign = 'right';
+            ctx.fillText('SCORE ' + (f * 10).toString().padStart(6, '0'), w - 10, 16);
+        }
+
+        // ========== 渲染工具卡片 ==========
+        function renderTools() {
+            const grid = document.getElementById('toolsGrid');
+            grid.innerHTML = '';
+            
+            tools.forEach((tool, index) => {
+                const card = document.createElement('a');
+                card.href = tool.file;
+                card.className = 'game-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                
+                card.innerHTML = `
+                    <div class="game-thumbnail" style="background: ${tool.color}20">
+                        <span style="font-size:64px; text-shadow: 0 0 20px ${tool.color}">${tool.icon}</span>
+                        ${tool.mobile ? '<span class="mobile-badge">📱 手机</span>' : ''}
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">${tool.title}</h3>
+                        <div class="game-meta">
+                            ${tool.tags.map(tag => `<span class="game-tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // ========== 移动端菜单 ==========
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+        
+        // ========== 生成星星背景 ==========
+        function createStars() {
+            const container = document.getElementById('pixelStars');
+            for (let i = 0; i < 20; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(star);
+            }
+        }
+        
+        // ========== 显示排行榜总览 ==========
+        function showAllRanks() {
+            const existing = document.getElementById('allRankModal');
+            if (existing) existing.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'allRankModal';
+            
+            let tabsHtml = '';
+            let panelsHtml = '';
+            
+            games.forEach((game, index) => {
+                const isActive = index === 0;
+                tabsHtml += `<button class="rtab-btn ${isActive ? 'active' : ''}" data-game="${game.id}">${game.title}</button>`;
+                
+                const list = PixelPlay.RankManager.getRankList(game.id);
+                let listHtml = '';
+                if (list.length === 0) {
+                    listHtml = '<div class="rrank-empty">暂无记录，快去玩吧！</div>';
+                } else {
+                    listHtml = list.map((item, i) => {
+                        const isCurrent = item.nickname === PixelPlay.UserManager.getNickname();
+                        const posIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                        return `<div class="rrank-item ${i < 3 ? 'top3' : ''} ${isCurrent ? 'current' : ''}">
+                            <span class="rrank-pos">${posIcon}</span>
+                            <span class="rrank-name">${item.nickname}</span>
+                            <span class="rrank-score">${item.score.toLocaleString()}</span>
+                            <span class="rrank-time">${item.time}</span>
+                        </div>`;
+                    }).join('');
+                }
+                
+                panelsHtml += `<div class="rtab-panel ${isActive ? 'active' : ''}" data-game="${game.id}">${listHtml}</div>`;
+            });
+            
+            modal.innerHTML = `
+                <style>
+                    #allRankModal {
+                        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                        background: rgba(26,26,46,0.98);
+                        display: flex; align-items: center; justify-content: center;
+                        z-index: 10000; padding: 20px;
+                    }
+                    .rrank-container {
+                        background: var(--pixel-dark); border: 4px solid var(--pixel-purple);
+                        padding: 24px; max-width: 500px; width: 100%; max-height: 80vh;
+                        display: flex; flex-direction: column;
+                    }
+                    .rrank-header {
+                        display: flex; justify-content: space-between; align-items: center;
+                        margin-bottom: 16px; padding-bottom: 12px;
+                        border-bottom: 2px solid var(--pixel-purple);
+                    }
+                    .rrank-title { font-size: 16px; color: var(--pixel-yellow); }
+                    .rrank-close {
+                        background: none; border: 2px solid var(--pixel-gray);
+                        color: var(--pixel-gray); font-family: inherit;
+                        font-size: 16px; width: 32px; height: 32px; cursor: pointer;
+                    }
+                    .rrank-close:hover { border-color: var(--pixel-magenta); color: var(--pixel-magenta); }
+                    .rtab-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+                    .rtab-btn {
+                        font-family: inherit; font-size: 11px; padding: 8px 12px;
+                        background: var(--pixel-black); border: 2px solid var(--pixel-purple);
+                        color: var(--pixel-gray); cursor: pointer;
+                    }
+                    .rtab-btn.active, .rtab-btn:hover {
+                        border-color: var(--pixel-cyan); color: var(--pixel-cyan);
+                    }
+                    .rtab-panel { display: none; overflow-y: auto; flex: 1; }
+                    .rtab-panel.active { display: flex; flex-direction: column; gap: 8px; }
+                    .rrank-item {
+                        display: grid; grid-template-columns: 40px 1fr 80px 70px;
+                        gap: 8px; align-items: center; padding: 10px;
+                        background: var(--pixel-black); border: 2px solid var(--pixel-dark);
+                    }
+                    .rrank-item.top3 { border-color: var(--pixel-yellow); }
+                    .rrank-item.current { border-color: var(--pixel-cyan); background: rgba(0,255,245,0.1); }
+                    .rrank-pos { font-size: 12px; text-align: center; }
+                    .rrank-name { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                    .rrank-score { font-size: 11px; color: var(--pixel-yellow); text-align: right; }
+                    .rrank-time { font-size: 10px; color: var(--pixel-gray); text-align: right; }
+                    .rrank-empty { text-align: center; padding: 40px; color: var(--pixel-gray); font-size: 10px; }
+                </style>
+                <div class="rrank-container">
+                    <div class="rrank-header">
+                        <h2 class="rrank-title">🏆 排行榜总览</h2>
+                        <button class="rrank-close" id="allRankClose">×</button>
+                    </div>
+                    <div class="rtab-bar">${tabsHtml}</div>
+                    ${panelsHtml}
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 关闭
+            modal.querySelector('#allRankClose').addEventListener('click', () => modal.remove());
+            modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+            
+            // Tab 切换
+            modal.querySelectorAll('.rtab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modal.querySelectorAll('.rtab-btn').forEach(b => b.classList.remove('active'));
+                    modal.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    modal.querySelector(`.rtab-panel[data-game="${btn.dataset.game}"]`).classList.add('active');
+                });
+            });
+        }
+        
+        // ========== 初始化 ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            createStars();
+            renderGames();
+            renderTools();
+            
+            // 昵称检查
+            PixelPlay.initPixelPlay();
+            
+            // 导航栏按钮
+            document.getElementById('rankLink').addEventListener('click', e => {
+                e.preventDefault();
+                showAllRanks();
+            });
+            
+            document.getElementById('userLink').addEventListener('click', e => {
+                e.preventDefault();
+                PixelPlay.showNicknameModal();
+            });
+        });
+    </script>
+</body>
+</html>
