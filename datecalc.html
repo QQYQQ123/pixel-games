@@ -64,12 +64,12 @@
             font-size: 14px;
         }
 
-        .logo-text { font-size: 10px; letter-spacing: 1px; }
+        .logo-text { font-size: 12px; letter-spacing: 1px; }
 
         .back-link {
             color: var(--pixel-cyan);
             text-decoration: none;
-            font-size: 9px;
+            font-size: 11px;
             padding: 8px 12px;
             border: 2px solid var(--pixel-cyan);
             transition: all 0.2s;
@@ -86,10 +86,10 @@
 
         /* 标题 */
         .page-title {
-            font-size: 16px;
+            font-size: 20px;
             color: var(--pixel-yellow);
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             text-shadow: 2px 2px 0 var(--pixel-purple);
             animation: titlePulse 3s ease-in-out infinite;
         }
@@ -100,7 +100,7 @@
         }
 
         .page-sub {
-            font-size: 10px;
+            font-size: 12px;
             color: var(--pixel-gray);
             text-align: center;
             margin-bottom: 24px;
@@ -117,8 +117,8 @@
 
         .mode-tab {
             font-family: inherit;
-            font-size: 10px;
-            padding: 10px 14px;
+            font-size: 12px;
+            padding: 12px 16px;
             background: var(--pixel-dark);
             border: 2px solid var(--pixel-purple);
             color: var(--pixel-gray);
@@ -150,7 +150,7 @@
         .date-row:last-child { margin-bottom: 0; }
 
         .row-label {
-            font-size: 11px;
+            font-size: 13px;
             color: var(--pixel-cyan);
             margin-bottom: 10px;
             display: flex;
@@ -171,18 +171,18 @@
         }
 
         .field-label {
-            font-size: 9px;
+            font-size: 11px;
             color: var(--pixel-gray);
             text-align: center;
         }
 
         .field-input {
             font-family: inherit;
-            font-size: 14px;
+            font-size: 16px;
             background: var(--pixel-black);
             border: 2px solid var(--pixel-purple);
             color: var(--pixel-white);
-            padding: 12px 8px;
+            padding: 14px 8px;
             text-align: center;
             width: 100%;
             outline: none;
@@ -190,7 +190,7 @@
         }
 
         .field-input:focus { border-color: var(--pixel-cyan); }
-        .field-input::placeholder { color: var(--pixel-gray); font-size: 10px; }
+        .field-input::placeholder { color: var(--pixel-gray); font-size: 11px; }
 
         /* 年份输入稍大 */
         .year-input { max-width: 80px; flex: 0 0 80px; }
@@ -219,7 +219,7 @@
         }
 
         .quick-holiday-title {
-            font-size: 9px;
+            font-size: 11px;
             color: var(--pixel-gray);
             margin-bottom: 10px;
         }
@@ -232,7 +232,7 @@
 
         .holiday-btn {
             font-family: inherit;
-            font-size: 10px;
+            font-size: 12px;
             padding: 8px 12px;
             background: var(--pixel-black);
             border: 2px solid var(--pixel-purple);
@@ -259,13 +259,13 @@
         }
 
         .result-empty {
-            font-size: 11px;
+            font-size: 13px;
             color: var(--pixel-gray);
             line-height: 2.5;
         }
 
         .result-big {
-            font-size: 22px;
+            font-size: 26px;
             color: var(--pixel-yellow);
             text-shadow: 0 0 15px rgba(255,221,0,0.6);
             line-height: 1.6;
@@ -275,7 +275,7 @@
         .result-big .accent { color: var(--pixel-cyan); text-shadow: 0 0 10px rgba(0,255,245,0.6); }
 
         .result-sub {
-            font-size: 11px;
+            font-size: 13px;
             color: var(--pixel-gray);
             line-height: 2.2;
         }
@@ -312,20 +312,20 @@
         }
 
         .today-item-label {
-            font-size: 9px;
+            font-size: 11px;
             color: var(--pixel-gray);
             margin-bottom: 6px;
         }
 
         .today-item-value {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--pixel-cyan);
             text-shadow: 0 0 8px rgba(0,255,245,0.4);
         }
 
         /* 生日输入 */
         .birthday-tip {
-            font-size: 10px;
+            font-size: 12px;
             color: var(--pixel-gray);
             margin-top: 8px;
             line-height: 2;
@@ -334,19 +334,22 @@
         /* 响应式 */
         @media (max-width: 480px) {
             .container { padding: 80px 12px 40px; }
-            .page-title { font-size: 14px; }
-            .mode-tab { font-size: 10px; padding: 10px 12px; }
-            .field-input { font-size: 16px; padding: 14px 6px; }
-            .year-input { max-width: 72px; flex: 0 0 72px; }
-            .result-big { font-size: 18px; }
-            .action-btn { font-size: 12px; padding: 16px; }
+            .page-title { font-size: 18px; }
+            .mode-tab { font-size: 12px; padding: 12px 14px; }
+            .field-input { font-size: 18px; padding: 16px 8px; }
+            .year-input { max-width: 80px; flex: 0 0 80px; }
+            .result-big { font-size: 22px; }
+            .action-btn { font-size: 14px; padding: 18px; }
             .today-info { flex-direction: column; align-items: center; }
+            .today-item-value { font-size: 16px; }
+            .result-sub { font-size: 14px; }
+            .fun-tip { font-size: 13px; }
         }
 
         @media (max-width: 360px) {
             .date-inputs { gap: 4px; }
-            .year-input { max-width: 60px; flex: 0 0 60px; }
-            .field-input { font-size: 14px; padding: 12px 4px; }
+            .year-input { max-width: 68px; flex: 0 0 68px; }
+            .field-input { font-size: 16px; padding: 14px 4px; }
         }
     </style>
 </head>
