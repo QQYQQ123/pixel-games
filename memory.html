@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>记忆翻牌 - PixelPlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --pixel-black: #1a1a2e;
+            --pixel-dark: #16213e;
+            --pixel-purple: #4a1942;
+            --pixel-magenta: #e94560;
+            --pixel-cyan: #00fff5;
+            --pixel-yellow: #ffdd00;
+            --pixel-green: #39ff14;
+            --pixel-orange: #ff6b35;
+            --pixel-white: #f1f1f1;
+            --pixel-gray: #6b7280;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: var(--pixel-black);
+            color: var(--pixel-white);
+            touch-action: none;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 2px);
+        }
+        
+        .game-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+        }
+        
+        .game-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 70px;
+            background: linear-gradient(180deg, rgba(26,26,46,0.98) 0%, rgba(26,26,46,0.85) 100%);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 300;
+        }
+        
+        .back-btn {
+            background: none;
+            border: 2px solid var(--pixel-cyan);
+            color: var(--pixel-cyan);
+            font-family: inherit;
+            font-size: 12px;
+            padding: 8px 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.1s;
+        }
+        
+        .back-btn:hover {
+            background: var(--pixel-cyan);
+            color: var(--pixel-black);
+        }
+        
+        .game-stats {
+            display: flex;
+            gap: 24px;
+            font-size: 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .stat-label { color: var(--pixel-gray); font-size: 12px; }
+        .stat-value { color: var(--pixel-yellow); font-size: 22px; font-weight: bold; text-shadow: 0 0 10px var(--pixel-yellow); }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 16px;
+            background: var(--pixel-purple);
+            border: 4px solid var(--pixel-magenta);
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+        }
+        
+        .card {
+            width: clamp(65px, 18vw, 100px);
+            height: clamp(65px, 18vw, 100px);
+            background: var(--pixel-dark);
+            border: 3px solid var(--pixel-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(24px, 8vw, 40px);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .card:hover:not(.flipped):not(.matched) {
+            border-color: var(--pixel-magenta);
+            transform: scale(1.05);
+        }
+        
+        .card.flipped {
+            background: var(--pixel-black);
+            border-color: var(--pixel-yellow);
+        }
+        
+        .card.matched {
+            background: var(--pixel-green);
+            border-color: var(--pixel-green);
+            cursor: default;
+            opacity: 0.7;
+        }
+        
+        .card-back {
+            font-size: clamp(16px, 4vw, 24px);
+            color: var(--pixel-cyan);
+        }
+        
+        .card-front {
+            display: none;
+        }
+        
+        .card.flipped .card-front,
+        .card.matched .card-front {
+            display: block;
+        }
+        
+        .card.flipped .card-back,
+        .card.matched .card-back {
+            display: none;
+        }
+        
+        .game-controls {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 80px;
+            background: linear-gradient(0deg, var(--pixel-dark) 0%, transparent 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 0 16px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            background: var(--pixel-dark);
+            border: 3px solid var(--pixel-cyan);
+            color: var(--pixel-cyan);
+            font-family: inherit;
+            font-size: 10px;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        
+        .control-btn:hover {
+            background: var(--pixel-cyan);
+            color: var(--pixel-black);
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(26, 26, 46, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .overlay.hidden { display: none; }
+        
+        .overlay-title {
+            font-size: clamp(20px, 5vw, 32px);
+            margin-bottom: 16px;
+            text-shadow: 0 0 10px var(--pixel-cyan);
+        }
+        
+        .overlay-score {
+            font-size: 14px;
+            color: var(--pixel-yellow);
+            margin-bottom: 24px;
+        }
+        
+        .overlay-btn {
+            background: var(--pixel-magenta);
+            border: none;
+            color: var(--pixel-white);
+            font-family: inherit;
+            font-size: 12px;
+            padding: 16px 48px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s;
+        }
+        
+        .overlay-btn::before {
+            content: '';
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border: 4px solid var(--pixel-cyan);
+        }
+        
+        .overlay-btn:hover {
+            background: var(--pixel-cyan);
+            color: var(--pixel-black);
+        }
+    </style>
+</head>
+<body>
+    <header class="game-header">
+        <a href="index.html" class="back-btn">← 返回</a>
+        <div class="game-stats">
+            <div class="stat-item">
+                <span class="stat-label">步数</span>
+                <span class="stat-value" id="moves">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">配对</span>
+                <span class="stat-value" id="pairs">0/8</span>
+            </div>
+        </div>
+    </header>
+    
+    <div class="game-container">
+        <div class="game-board" id="board"></div>
+    </div>
+    
+    <div class="game-controls">
+        <button class="control-btn" id="rankBtn">🏆 排行</button>
+        <button class="control-btn" id="newGameBtn">🔄 新游戏</button>
+    </div>
+    
+    <div class="overlay hidden" id="winOverlay">
+        <h1 class="overlay-title">🎉 恭喜过关!</h1>
+        <p class="overlay-score">总共 <span id="finalMoves">0</span> 步完成</p>
+        <button class="overlay-btn" id="retryBtn">再来一局</button>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+        const EMOJIS = ['🎮', '🎯', '🎲', '🏆', '⭐', '💎', '🔮', '🎪'];
+        let cards = [];
+        let flipped = [];
+        let matched = 0;
+        let moves = 0;
+        let canFlip = true;
+        
+        function init() {
+            newGame();
+            document.getElementById('newGameBtn').addEventListener('click', newGame);
+            document.getElementById('retryBtn').addEventListener('click', () => {
+                document.getElementById('winOverlay').classList.add('hidden');
+                newGame();
+            });
+            document.getElementById('rankBtn').addEventListener('click', () => {
+                PixelPlay.showRankModal('memory', '记忆翻牌');
+            });
+            PixelPlay.initPixelPlay();
+        }
+        
+        function newGame() {
+            // 创建卡片对
+            const pairs = [...EMOJIS, ...EMOJIS];
+            // 洗牌
+            for (let i = pairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+            }
+            
+            cards = pairs.map((emoji, index) => ({
+                id: index,
+                emoji: emoji,
+                flipped: false,
+                matched: false
+            }));
+            
+            flipped = [];
+            matched = 0;
+            moves = 0;
+            canFlip = true;
+            
+            updateUI();
+            render();
+        }
+        
+        function render() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            cards.forEach(card => {
+                const el = document.createElement('div');
+                el.className = 'card';
+                if (card.flipped) el.classList.add('flipped');
+                if (card.matched) el.classList.add('matched');
+                
+                el.innerHTML = `
+                    <span class="card-back">?</span>
+                    <span class="card-front">${card.emoji}</span>
+                `;
+                
+                el.addEventListener('click', () => flipCard(card.id));
+                board.appendChild(el);
+            });
+        }
+        
+        function flipCard(id) {
+            const card = cards[id];
+            
+            if (!canFlip || card.flipped || card.matched) return;
+            
+            card.flipped = true;
+            flipped.push(id);
+            render();
+            
+            if (flipped.length === 2) {
+                moves++;
+                updateUI();
+                canFlip = false;
+                
+                const [first, second] = flipped;
+                
+                if (cards[first].emoji === cards[second].emoji) {
+                    // 匹配成功
+                    cards[first].matched = true;
+                    cards[second].matched = true;
+                    matched++;
+                    flipped = [];
+                    canFlip = true;
+                    updateUI();
+                    render();
+                    
+                    if (matched === 8) {
+                        setTimeout(() => {
+                            document.getElementById('finalMoves').textContent = moves;
+                            document.getElementById('winOverlay').classList.remove('hidden');
+                            if (PixelPlay.UserManager.hasNickname()) {
+                                PixelPlay.RankManager.addScore('memory', moves);
+                            }
+                        }, 300);
+                    }
+                } else {
+                    // 匹配失败，翻回去
+                    setTimeout(() => {
+                        cards[first].flipped = false;
+                        cards[second].flipped = false;
+                        flipped = [];
+                        canFlip = true;
+                        render();
+                    }, 800);
+                }
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('pairs').textContent = `${matched}/8`;
+        }
+        
+        init();
+    </script>
+</body>
+</html>
