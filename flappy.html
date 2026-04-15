@@ -131,8 +131,8 @@ const H = canvas.height;  // 480
 
 // 柱子配置
 const PIPE_WIDTH = 52;
-const PIPE_GAP = 150;    // 上下柱子之间的间距
-const PIPE_SPEED = 2.2;  // 柱子移动速度
+const PIPE_GAP = 165;    // 上下柱子之间的间距（增大，更容易通过）
+const PIPE_SPEED = 1.8;  // 柱子移动速度（减慢，更容易反应）
 const PIPE_INTERVAL = 160; // 柱子生成间隔（像素）
 const PIPE_MIN_Y = 80;   // 柱子洞口最小Y
 const PIPE_MAX_Y = H - 150; // 柱子洞口最大Y
@@ -140,17 +140,18 @@ const PIPE_MAX_Y = H - 150; // 柱子洞口最大Y
 // 小鸟配置
 const BIRD_X = 80;       // 小鸟X固定
 const BIRD_SIZE = 18;    // 小鸟半径
-const GRAVITY = 0.42;    // 重力加速度
-const FLAP_POWER = -7.2; // 扇翅力度（负数向上）
-const MAX_FALL = 10;     // 最大下落速度
+const GRAVITY = 0.35;    // 重力加速度（降低，更容易控制）
+const FLAP_POWER = -6.0; // 扇翅力度（降低，更温和）
+const MAX_FALL = 8;     // 最大下落速度
 
 // 地面高度
 const GROUND_H = 60;
 const GROUND_Y = H - GROUND_H;
 
 // ========== 游戏状态 ==========
-const STATE = { START: 0, PLAYING: 1, OVER: 2 };
+const STATE = { START: 0, COUNTDOWN: 1, PLAYING: 2, OVER: 3 };
 let state = STATE.START;
+let countdown = 0;         // 倒计时帧数（3秒=180帧）
 let score = 0;
 let hiScore = parseInt(localStorage.getItem('pixelplay_flappy_hi') || '0');
 let pipes = [];
@@ -368,6 +369,25 @@ function drawParticles() {
 
 // ========== 分数显示（大字体） ==========
 function drawScoreBoard() {
+    if (state === STATE.COUNTDOWN) {
+        ctx.save();
+        const cd = Math.ceil(countdown / 60);
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 5;
+        ctx.font = 'bold 60px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.strokeText(cd, W / 2, H / 2 - 20);
+        ctx.fillText(cd, W / 2, H / 2 - 20);
+        ctx.font = '12px "Press Start 2P"';
+        ctx.fillStyle = '#ffdd00';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.strokeText('GET READY', W / 2, H / 2 + 30);
+        ctx.fillText('GET READY', W / 2, H / 2 + 30);
+        ctx.restore();
+        return;
+    }
     if (state !== STATE.PLAYING) return;
     ctx.save();
     ctx.fillStyle = '#fff';
@@ -383,13 +403,30 @@ function drawScoreBoard() {
 // ========== 核心逻辑 ==========
 function flap() {
     if (state === STATE.START) {
-        startGame();
+        startCountdown();
+    } else if (state === STATE.COUNTDOWN) {
+        // 倒计时中不响应
     } else if (state === STATE.PLAYING) {
         bird.vy = FLAP_POWER;
         bird.wing = 3;
     } else if (state === STATE.OVER) {
         resetGame();
     }
+}
+
+function startCountdown() {
+    state = STATE.COUNTDOWN;
+    countdown = 180; // 3秒 = 180帧（60fps）
+    score = 0;
+    pipes = [];
+    particles = [];
+    bird.y = H / 2;
+    bird.vy = 0;
+    bird.angle = 0;
+    scoredPipes.clear();
+    document.getElementById('scoreEl').textContent = '0';
+    document.getElementById('startOverlay').classList.add('hidden');
+    document.getElementById('overOverlay').classList.add('hidden');
 }
 
 function startGame() {
@@ -407,7 +444,7 @@ function startGame() {
 }
 
 function resetGame() {
-    startGame();
+    startCountdown();
 }
 
 function gameOver() {
@@ -440,6 +477,20 @@ function update(dt) {
     frameCount++;
     groundOffset += PIPE_SPEED;
     updateClouds();
+
+    if (state === STATE.COUNTDOWN) {
+        countdown--;
+        if (countdown <= 0) {
+            startGame();
+        }
+        // 倒计时中小鸟悬浮
+        bird.vy += GRAVITY * 0.3;
+        bird.vy = Math.min(bird.vy, MAX_FALL * 0.5);
+        bird.y += bird.vy;
+        bird.wing = (bird.wing + 0.3) % 4;
+        bird.angle = Math.min(Math.max(bird.vy * 3, -30), 45);
+        return;
+    }
 
     if (state !== STATE.PLAYING) return;
 
