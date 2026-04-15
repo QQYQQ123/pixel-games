@@ -585,6 +585,16 @@
                 mobile: true,
                 file: 'shooter.html',
                 icon: '✈️'
+            },
+            {
+                id: 'snake',
+                title: '贪吃蛇',
+                category: 'action',
+                tags: ['经典', '休闲'],
+                color: '#39ff14',
+                mobile: true,
+                file: 'snake.html',
+                icon: '🐍'
             }
         ];
         
@@ -727,6 +737,7 @@
                     switch(gameId) {
                         case 'breakout': drawBreakoutPreview(ctx, w, h, color, frame); break;
                         case '2048': draw2048Preview(ctx, w, h, color, frame); break;
+                        case 'snake': drawSnakePreview(ctx, w, h, color, frame); break;
                         case 'memory': drawMemoryPreview(ctx, w, h, color, frame); break;
                         case 'guess': drawGuessPreview(ctx, w, h, color, frame); break;
                         case 'shooter': drawShooterPreview(ctx, w, h, color, frame); break;
@@ -820,6 +831,34 @@
             });
         }
         
+        // --- 贪吃蛇预览：蛇身游走 + 跳动食物 ---
+        function drawSnakePreview(ctx, w, h, color, f) {
+            const gx = 12, gy = 10, gs = Math.floor(Math.min(w / gx, h / gy));
+            const ox = (w - gx * gs) / 2, oy = (h - gy * gs) / 2;
+            ctx.strokeStyle = 'rgba(57,255,20,0.08)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= gx; i++) { ctx.beginPath(); ctx.moveTo(ox + i * gs, oy); ctx.lineTo(ox + i * gs, oy + gy * gs); ctx.stroke(); }
+            for (let j = 0; j <= gy; j++) { ctx.beginPath(); ctx.moveTo(ox, oy + j * gs); ctx.lineTo(ox + gx * gs, oy + j * gs); ctx.stroke(); }
+            const len = 6;
+            for (let i = 0; i < len; i++) {
+                const sx = Math.floor((4 + i * (gx - 8) / len) % (gx - 2)) + 1;
+                const sy = Math.floor((gy / 2) % (gy - 2)) + 1;
+                ctx.globalAlpha = 1 - i * 0.12;
+                ctx.fillStyle = i === 0 ? '#39ff14' : 'rgb(57,' + Math.floor(255 - i * 35) + ',20)';
+                ctx.fillRect(ox + sx * gs + 1, oy + sy * gs + 1, gs - 2, gs - 2);
+            }
+            ctx.globalAlpha = 1;
+            const fx = Math.floor((f * 0.3) % (gx - 2)) + 1;
+            const fy = Math.floor((f * 0.2 + 3) % (gy - 2)) + 1;
+            const pulse = 0.7 + 0.3 * Math.sin(f * 0.2);
+            ctx.fillStyle = '#ffdd00';
+            ctx.shadowColor = '#ffdd00';
+            ctx.shadowBlur = 6 * pulse;
+            const fs = (gs - 2) * pulse;
+            ctx.fillRect(ox + fx * gs + (gs - 2 - fs) / 2, oy + fy * gs + (gs - 2 - fs) / 2, fs, fs);
+            ctx.shadowBlur = 0;
+        }
+
         // --- 记忆翻牌预览：翻牌动画 ---
         function drawMemoryPreview(ctx, w, h, color, f) {
             const cols = 4, rows = 3;
