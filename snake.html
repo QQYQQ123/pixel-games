@@ -486,27 +486,31 @@ function drawSnake() {
 
 function drawFood() {
     if (!food) return;
-    var x = food.x * CELL + 2;
-    var y = food.y * CELL + 2;
-    var s = CELL - 4;
-    var pulse = 0.8 + 0.2 * Math.sin(Date.now() / 300);
+    var x = food.x * CELL + 1;
+    var y = food.y * CELL + 1;
+    var s = CELL - 2;
+    var pulse = 0.75 + 0.25 * Math.sin(Date.now() / 250);
     ctx.fillStyle = '#ffdd00';
     ctx.shadowColor = '#ffdd00';
-    ctx.shadowBlur = 8 * pulse;
+    ctx.shadowBlur = 15 * pulse;
     ctx.fillRect(x + s * (1 - pulse) / 2, y + s * (1 - pulse) / 2, s * pulse, s * pulse);
+    // 再加个白色高光
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(x + 3, y + 3, s * pulse * 0.4, s * pulse * 0.4);
     ctx.shadowBlur = 0;
 }
 
 function drawPowerup() {
     if (!powerup || !powerupType) return;
-    var x = powerup.x * CELL + 2;
-    var y = powerup.y * CELL + 2;
-    var s = CELL - 4;
+    var x = powerup.x * CELL + 1;
+    var y = powerup.y * CELL + 1;
+    var s = CELL - 2;
     var pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
     var color = getPowerupColor(powerupType);
     ctx.fillStyle = color;
     ctx.shadowColor = color;
-    ctx.shadowBlur = 12 * pulse;
+    ctx.shadowBlur = 15 * pulse;
     ctx.fillRect(x + s * (1 - pulse) / 2, y + s * (1 - pulse) / 2, s * pulse, s * pulse);
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#0a0a1a';
