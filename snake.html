@@ -67,6 +67,7 @@
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(10,10,26,0.92);
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+            cursor: pointer;
         }
         .overlay.hidden { display: none; }
         .overlay-title { font-size: 18px; color: #ffdd00; text-shadow: 0 0 20px #ffdd00; }
@@ -98,6 +99,18 @@
             user-select: none; -webkit-tap-highlight-color: transparent; transition: background 0.1s;
         }
         .dpad-btn:active { background: rgba(0,255,245,0.4); }
+        .dpad-start {
+            background: rgba(255,221,0,0.2);
+            border-color: #ffdd00;
+            color: #ffdd00;
+            font-size: 14px;
+            font-family: 'Press Start 2P', cursive;
+        }
+        .dpad-start:active { background: rgba(255,221,0,0.5); }
+        @media (max-width: 600px) {
+            .dpad { display: grid; }
+            .dpad-start { font-size: 12px; }
+        }
         .dpad-center { background: transparent; border: none; }
     </style>
 </head>
@@ -119,19 +132,21 @@
             <canvas id="gameCanvas"></canvas>
             <div class="overlay" id="startOverlay">
                 <div class="overlay-title">🐍 贪吃蛇</div>
-                <div class="overlay-sub">空格键 开始</div>
+                <div class="overlay-sub">点击开始 / 空格</div>
             </div>
             <div class="overlay hidden" id="overOverlay">
                 <div class="overlay-title">💀 GAME OVER</div>
                 <div class="overlay-score" id="finalScore">得分: 0</div>
                 <div class="overlay-hi" id="finalHi">最高: 0</div>
-                <div class="overlay-sub">空格键 重试</div>
+                <div class="overlay-sub">点击重试 / 空格</div>
             </div>
         </div>
         <div class="bottom-bar"><span>空格=暂停</span><span>↑↓←→ 或 WASD</span></div>
         <div class="dpad">
             <div></div><button class="dpad-btn" id="btnUp">▲</button><div></div>
-            <button class="dpad-btn" id="btnLeft">◀</button><div class="dpad-center"></div><button class="dpad-btn" id="btnRight">▶</button>
+            <button class="dpad-btn" id="btnLeft">◀</button>
+            <button class="dpad-btn dpad-start" id="btnStart">▶</button>
+            <button class="dpad-btn" id="btnRight">▶</button>
             <div></div><button class="dpad-btn" id="btnDown">▼</button><div></div>
         </div>
     </div>
@@ -394,9 +409,15 @@ for (var b = 0; b < btnIds.length; b++) {
     }(id));
 }
 
+document.getElementById('btnStart').addEventListener('click', function() { handleAction(); });
+
 canvas.addEventListener('click', function() {
     if (state === STATE.START || state === STATE.OVER) handleAction();
 });
+
+// 手机：点击遮罩层开始/重试
+startOverlay.addEventListener('click', function() { if(state===STATE.START) handleAction(); });
+overOverlay.addEventListener('click', function() { if(state===STATE.OVER) handleAction(); });
 
 function drawGrid() {
     ctx.strokeStyle = 'rgba(0,255,245,0.06)';
