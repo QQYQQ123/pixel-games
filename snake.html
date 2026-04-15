@@ -62,7 +62,7 @@
             background: rgba(233,69,96,0.4); animation: flashOut 0.4s ease-out forwards; border-radius: 2px;
         }
         @keyframes flashOut { 0% { opacity: 1; } 100% { opacity: 0; } }
-        #gameCanvas { display: block; background: #0a0a1a; }
+        #gameCanvas { display: block; background: #0a0a1a; max-width: 100%; }
         .overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(10,10,26,0.92);
@@ -157,6 +157,19 @@ const GRID = 24;
 const CELL = 20;
 canvas.width = GRID * CELL;
 canvas.height = GRID * CELL;
+
+function getCanvasScale() {
+    const rect = canvas.getBoundingClientRect();
+    return { scaleX: canvas.width / rect.width, scaleY: canvas.height / rect.height };
+}
+
+function resizeCanvas() {
+    const wrap = document.querySelector('.game-wrapper');
+    var maxW = Math.min(wrap.clientWidth - 8, 480);
+    canvas.style.width = maxW + 'px';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 const scoreEl = document.getElementById('scoreEl');
 const hiEl = document.getElementById('hiEl');
 const speedBadge = document.getElementById('speedBadge');
@@ -411,8 +424,10 @@ for (var b = 0; b < btnIds.length; b++) {
 
 document.getElementById('btnStart').addEventListener('click', function() { handleAction(); });
 
-canvas.addEventListener('click', function() {
-    if (state === STATE.START || state === STATE.OVER) handleAction();
+canvas.addEventListener('click', function(e) {
+    if (state !== STATE.START && state !== STATE.OVER) return;
+    e.preventDefault();
+    handleAction();
 });
 
 // 手机：点击遮罩层开始/重试
