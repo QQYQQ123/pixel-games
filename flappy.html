@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🐦 Flappy Bird - PixelPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 2px);
+            pointer-events: none; z-index: 9999;
+        }
+        .navbar {
+            width: 100%; height: 60px;
+            background: linear-gradient(180deg, rgba(26,26,46,0.98) 0%, rgba(10,10,26,0.95) 100%);
+            border-bottom: 3px solid #00fff5;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #f1f1f1; }
+        .logo-icon { width: 34px; height: 34px; background: #00fff5; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .logo-text { font-size: 10px; letter-spacing: 1px; }
+        .back-btn { color: #00fff5; text-decoration: none; font-size: 8px; padding: 8px 12px; border: 2px solid #00fff5; }
+        .back-btn:hover { background: #00fff5; color: #0a0a1a; }
+        .game-area {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 16px; gap: 12px; position: relative;
+        }
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-width: 360px; padding: 0 4px;
+        }
+        .score-label { font-size: 10px; color: #6b7280; }
+        .score-value { font-size: 18px; color: #ffdd00; text-shadow: 0 0 10px #ffdd00; }
+        .hi-value { color: #39ff14; text-shadow: 0 0 10px #39ff14; }
+        .canvas-wrap {
+            position: relative; border: 4px solid #00fff5; border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0,255,245,0.3);
+        }
+        #gameCanvas { display: block; background: #87ceeb; cursor: pointer; }
+        .hint { font-size: 8px; color: #00fff5; opacity: 0.7; animation: blink 2s step-end infinite; }
+        @keyframes blink { 0%,100% { opacity: 0.7; } 50% { opacity: 0.2; } }
+        .overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+            background: rgba(10,10,26,0.85); cursor: pointer;
+        }
+        .overlay.hidden { display: none; }
+        .overlay-title { font-size: 16px; color: #ffdd00; text-shadow: 0 0 20px #ffdd00; text-align: center; }
+        .overlay-sub { font-size: 9px; color: #00fff5; animation: blink 1s step-end infinite; text-align: center; }
+        .overlay-score { font-size: 13px; color: #39ff14; }
+        .overlay-hi { font-size: 9px; color: #6b7280; }
+        .medal {
+            font-size: 36px; opacity: 0;
+            transform: scale(0); transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .medal.show { opacity: 1; transform: scale(1); }
+        .new-hi {
+            font-size: 8px; color: #ffdd00; text-shadow: 0 0 10px #ffdd00;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .new-hi.show { opacity: 1; }
+        /* 虚拟按钮 */
+        .touch-area {
+            display: none; width: 100%; max-width: 360px; gap: 20px; margin-top: 4px;
+        }
+        @media (max-width: 600px) { .touch-area { display: flex; } }
+        .tap-zone {
+            flex: 1; height: 70px; background: rgba(0,255,245,0.1);
+            border: 2px solid #00fff5; border-radius: 8px;
+            color: #00fff5; font-size: 20px; font-family: 'Press Start 2P', cursive;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+        .tap-zone:active { background: rgba(0,255,245,0.3); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">▶</div>
+            <span class="logo-text">PIXELPLAY</span>
+        </a>
+        <a href="index.html" class="back-btn">← 返回</a>
+    </nav>
+    <div class="game-area">
+        <div class="top-bar">
+            <div><span class="score-label">得分 </span><span class="score-value" id="scoreEl">0</span></div>
+            <div><span class="score-label">最高 </span><span class="score-value hi-value" id="hiEl">0</span></div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="gameCanvas" width="360" height="480"></canvas>
+            <!-- 开始界面 -->
+            <div class="overlay" id="startOverlay">
+                <div class="overlay-title">🐦 Flappy Bird</div>
+                <div class="overlay-sub">点击 / 空格 开始</div>
+                <div style="font-size:8px;color:#6b7280;margin-top:8px;">↑ / 空格 / 点击 = 飞行</div>
+            </div>
+            <!-- 结束界面 -->
+            <div class="overlay hidden" id="overOverlay">
+                <div class="overlay-title">💀 GAME OVER</div>
+                <div class="medal" id="medal">🏆</div>
+                <div class="overlay-score" id="finalScore">得分: 0</div>
+                <div class="new-hi" id="newHi">⭐ 新纪录! ⭐</div>
+                <div class="overlay-hi" id="finalHi">最高: 0</div>
+                <div class="overlay-sub">点击重试 / 空格</div>
+            </div>
+        </div>
+        <p class="hint">空格 / 点击 / ↑ 飞行</p>
+        <div class="touch-area">
+            <div class="tap-zone" id="btnLeft">◀ 飞行 ▶</div>
+        </div>
+    </div>
+
+<script>
+// ========== 游戏常量 ==========
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;   // 360
+const H = canvas.height;  // 480
+
+// 柱子配置
+const PIPE_WIDTH = 52;
+const PIPE_GAP = 150;    // 上下柱子之间的间距
+const PIPE_SPEED = 2.2;  // 柱子移动速度
+const PIPE_INTERVAL = 160; // 柱子生成间隔（像素）
+const PIPE_MIN_Y = 80;   // 柱子洞口最小Y
+const PIPE_MAX_Y = H - 150; // 柱子洞口最大Y
+
+// 小鸟配置
+const BIRD_X = 80;       // 小鸟X固定
+const BIRD_SIZE = 18;    // 小鸟半径
+const GRAVITY = 0.42;    // 重力加速度
+const FLAP_POWER = -7.2; // 扇翅力度（负数向上）
+const MAX_FALL = 10;     // 最大下落速度
+
+// 地面高度
+const GROUND_H = 60;
+const GROUND_Y = H - GROUND_H;
+
+// ========== 游戏状态 ==========
+const STATE = { START: 0, PLAYING: 1, OVER: 2 };
+let state = STATE.START;
+let score = 0;
+let hiScore = parseInt(localStorage.getItem('pixelplay_flappy_hi') || '0');
+let pipes = [];
+let particles = [];
+let groundOffset = 0;
+let frameCount = 0;
+
+// 小鸟状态
+let bird = { y: 0, vy: 0, angle: 0, wing: 0, wingDir: 1 };
+
+// 分数记录（防止一柱重复加分）
+let scoredPipes = new Set();
+
+// ========== 背景云朵 ==========
+const clouds = [];
+function initClouds() {
+    clouds.length = 0;
+    for (let i = 0; i < 5; i++) {
+        clouds.push({
+            x: Math.random() * W,
+            y: 30 + Math.random() * 120,
+            w: 40 + Math.random() * 60,
+            h: 20 + Math.random() * 25,
+            speed: 0.2 + Math.random() * 0.4,
+            alpha: 0.5 + Math.random() * 0.4
+        });
+    }
+}
+function updateClouds() {
+    for (let c of clouds) {
+        c.x -= c.speed;
+        if (c.x + c.w < 0) {
+            c.x = W + 10;
+            c.y = 30 + Math.random() * 120;
+        }
+    }
+}
+function drawClouds() {
+    ctx.fillStyle = '#fff';
+    for (let c of clouds) {
+        ctx.globalAlpha = c.alpha;
+        // 像素云朵：多个矩形拼成
+        ctx.fillRect(c.x + c.w * 0.2, c.y, c.w * 0.6, c.h * 0.6);
+        ctx.fillRect(c.x, c.y + c.h * 0.3, c.w, c.h * 0.7);
+        ctx.fillRect(c.x + c.w * 0.4, c.y - c.h * 0.3, c.w * 0.4, c.h * 0.3);
+    }
+    ctx.globalAlpha = 1;
+}
+
+// ========== 背景渐变 ==========
+function drawBackground() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#4a90d9');
+    grad.addColorStop(0.6, '#87ceeb');
+    grad.addColorStop(1, '#a8e6cf');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    drawClouds();
+}
+
+// ========== 地面 ==========
+function drawGround() {
+    // 草地层
+    ctx.fillStyle = '#5d8c3e';
+    ctx.fillRect(0, GROUND_Y, W, GROUND_H);
+    // 深绿条纹
+    ctx.fillStyle = '#4a7a30';
+    ctx.fillRect(0, GROUND_Y, W, 8);
+    // 泥土
+    ctx.fillStyle = '#8B6914';
+    ctx.fillRect(0, GROUND_Y + GROUND_H - 20, W, 20);
+    // 地面纹理（移动的草丛）
+    ctx.fillStyle = '#3d6b24';
+    for (let x = (-(groundOffset * 0.8) % 24); x < W + 24; x += 24) {
+        ctx.fillRect(x, GROUND_Y + 8, 8, 6);
+        ctx.fillRect(x + 12, GROUND_Y + 8, 4, 4);
+    }
+    // 地面高光线
+    ctx.fillStyle = '#6db35a';
+    ctx.fillRect(0, GROUND_Y + 10, W, 3);
+}
+
+// ========== 柱子 ==========
+function spawnPipe() {
+    const holeY = PIPE_MIN_Y + Math.random() * (PIPE_MAX_Y - PIPE_MIN_Y);
+    pipes.push({
+        x: W + 10,
+        holeY: holeY,
+        passed: false
+    });
+}
+
+function drawPipe(pipe) {
+    const topH = pipe.holeY;
+    const botY = pipe.holeY + PIPE_GAP;
+    const botH = H - GROUND_H - botY;
+    const pw = PIPE_WIDTH;
+    const border = 4;
+
+    // === 柱子主体 ===
+    // 上柱子
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(pipe.x, 0, pw, topH - border);
+    // 上柱子帽
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(pipe.x - 4, topH - 24, pw + 8, 20);
+    // 上柱子帽高光
+    ctx.fillStyle = '#58d68d';
+    ctx.fillRect(pipe.x, topH - 22, pw + 4, 4);
+    // 上柱子阴影
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(pipe.x, topH - border, pw, border);
+    ctx.fillRect(pipe.x - 4, topH - 24, pw + 8, 4);
+
+    // 下柱子
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(pipe.x, botY + border, pw, botH);
+    // 下柱子帽
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(pipe.x - 4, botY, pw + 8, 20);
+    // 下柱子帽高光
+    ctx.fillStyle = '#58d68d';
+    ctx.fillRect(pipe.x, botY + 2, pw + 4, 4);
+    // 下柱子阴影
+    ctx.fillStyle = '#1e8449';
+    ctx.fillRect(pipe.x, botY + border, pw, 4);
+    ctx.fillRect(pipe.x, botY + 16, pw, 4);
+    ctx.fillRect(pipe.x - 4, botY + 16, pw + 8, 4);
+
+    // 柱子纹理线
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(pipe.x + pw * 0.3, 0, 3, topH - border);
+    ctx.fillRect(pipe.x + pw * 0.3, botY + border, 3, botH);
+}
+
+function drawPipes() {
+    for (let p of pipes) drawPipe(p);
+}
+
+// ========== 小鸟 ==========
+function drawBird() {
+    const bx = BIRD_X;
+    const by = bird.y;
+    const s = BIRD_SIZE;
+
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(bird.angle);
+
+    // 身体（椭圆形像素风）
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(-s, -s * 0.7, s * 2, s * 1.4);
+    ctx.fillRect(-s * 0.6, -s * 0.9, s * 1.2, s * 0.4);
+    ctx.fillRect(-s * 0.6, s * 0.5, s * 1.2, s * 0.4);
+
+    // 翅膀
+    ctx.fillStyle = '#f39c12';
+    const wingY = bird.wing * 4;
+    ctx.fillRect(-s - 2, -s * 0.4 - wingY, s * 0.8, s * 0.8);
+    ctx.fillRect(-s - 2, s * 0.4 + wingY, s * 0.8, s * 0.8);
+
+    // 眼睛
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(s * 0.2, -s * 0.4, s * 0.5, s * 0.5);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(s * 0.4, -s * 0.3, s * 0.3, s * 0.3);
+
+    // 嘴巴
+    ctx.fillStyle = '#e67e22';
+    ctx.fillRect(s * 0.7, -s * 0.1, s * 0.7, s * 0.4);
+    ctx.fillRect(s * 0.7, -s * 0.1, s * 0.4, s * 0.15);
+
+    ctx.restore();
+}
+
+// ========== 粒子效果 ==========
+function spawnParticles(x, y, color) {
+    for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 * i) / 12 + Math.random() * 0.5;
+        const speed = 1.5 + Math.random() * 3;
+        particles.push({
+            x, y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1,
+            color: color,
+            size: 2 + Math.random() * 4
+        });
+    }
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1;
+        p.life -= 0.03;
+        p.size *= 0.96;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function drawParticles() {
+    for (let p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 4;
+        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+}
+
+// ========== 分数显示（大字体） ==========
+function drawScoreBoard() {
+    if (state !== STATE.PLAYING) return;
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.font = 'bold 24px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.strokeText(score, W / 2, 50);
+    ctx.fillText(score, W / 2, 50);
+    ctx.restore();
+}
+
+// ========== 核心逻辑 ==========
+function flap() {
+    if (state === STATE.START) {
+        startGame();
+    } else if (state === STATE.PLAYING) {
+        bird.vy = FLAP_POWER;
+        bird.wing = 3;
+    } else if (state === STATE.OVER) {
+        resetGame();
+    }
+}
+
+function startGame() {
+    state = STATE.PLAYING;
+    score = 0;
+    pipes = [];
+    particles = [];
+    bird.y = H / 2;
+    bird.vy = 0;
+    bird.angle = 0;
+    scoredPipes.clear();
+    document.getElementById('scoreEl').textContent = '0';
+    document.getElementById('startOverlay').classList.add('hidden');
+    document.getElementById('overOverlay').classList.add('hidden');
+}
+
+function resetGame() {
+    startGame();
+}
+
+function gameOver() {
+    state = STATE.OVER;
+    const isNewHi = score > hiScore;
+    if (isNewHi) {
+        hiScore = score;
+        localStorage.setItem('pixelplay_flappy_hi', hiScore);
+        document.getElementById('hiEl').textContent = hiScore;
+    }
+
+    spawnParticles(BIRD_X, bird.y, '#f1c40f');
+    spawnParticles(BIRD_X, bird.y, '#e74c3c');
+
+    document.getElementById('finalScore').textContent = '得分: ' + score;
+    document.getElementById('finalHi').textContent = '最高: ' + hiScore;
+
+    const medal = document.getElementById('medal');
+    const newHi = document.getElementById('newHi');
+    if (score >= 40) { medal.textContent = '💎'; medal.classList.add('show'); }
+    else if (score >= 20) { medal.textContent = '🥈'; medal.classList.add('show'); }
+    else if (score >= 10) { medal.textContent = '🥉'; medal.classList.add('show'); }
+    else { medal.classList.remove('show'); }
+    newHi.classList.toggle('show', isNewHi);
+
+    document.getElementById('overOverlay').classList.remove('hidden');
+}
+
+function update(dt) {
+    frameCount++;
+    groundOffset += PIPE_SPEED;
+    updateClouds();
+
+    if (state !== STATE.PLAYING) return;
+
+    // 小鸟重力
+    bird.vy += GRAVITY;
+    bird.vy = Math.min(bird.vy, MAX_FALL);
+    bird.y += bird.vy;
+
+    // 翅膀动画
+    bird.wing += bird.wingDir * 0.4;
+    if (bird.wing > 3) bird.wingDir = -1;
+    if (bird.wing < -1) bird.wingDir = 1;
+
+    // 身体角度（下落时低头，向上时抬头）
+    const targetAngle = Math.min(Math.max(bird.vy * 0.04, -0.4), 1.2);
+    bird.angle += (targetAngle - bird.angle) * 0.15;
+
+    // 移动柱子
+    for (let i = pipes.length - 1; i >= 0; i--) {
+        pipes[i].x -= PIPE_SPEED;
+        if (pipes[i].x + PIPE_WIDTH < 0) {
+            pipes.splice(i, 1);
+        }
+    }
+
+    // 生成新柱子
+    if (frameCount % Math.round(PIPE_INTERVAL / PIPE_SPEED) === 0) {
+        spawnPipe();
+    }
+
+    // 计分：鸟穿过柱子
+    for (let p of pipes) {
+        if (!p.passed && p.x + PIPE_WIDTH < BIRD_X) {
+            p.passed = true;
+            score++;
+            document.getElementById('scoreEl').textContent = score;
+            spawnParticles(BIRD_X, bird.y, '#2ecc71');
+        }
+    }
+
+    // 粒子
+    updateParticles();
+
+    // 碰撞检测
+    // 天花板
+    if (bird.y - BIRD_SIZE < 0) {
+        bird.y = BIRD_SIZE;
+        bird.vy = 0;
+    }
+    // 地面
+    if (bird.y + BIRD_SIZE > GROUND_Y) {
+        bird.y = GROUND_Y - BIRD_SIZE;
+        gameOver();
+        return;
+    }
+    // 柱子碰撞
+    for (let p of pipes) {
+        const bx = BIRD_X;
+        const by = bird.y;
+        const br = BIRD_SIZE - 3; // 稍微缩小碰撞体积，更友好
+
+        // 左边缘
+        if (bx + br > p.x && bx - br < p.x + PIPE_WIDTH) {
+            // 上柱子
+            if (by - br < p.holeY) {
+                gameOver();
+                return;
+            }
+            // 下柱子
+            if (by + br > p.holeY + PIPE_GAP) {
+                gameOver();
+                return;
+            }
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawBackground();
+    drawPipes();
+    drawBird();
+    drawGround();
+    drawParticles();
+    drawScoreBoard();
+}
+
+// ========== 游戏循环 ==========
+let lastTime = 0;
+function loop(ts) {
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// ========== 控制 ==========
+// 键盘
+document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        flap();
+    }
+});
+
+// 鼠标点击
+canvas.addEventListener('click', function(e) { e.preventDefault(); flap(); });
+canvas.addEventListener('touchstart', function(e) { e.preventDefault(); flap(); }, { passive: false });
+
+// 开始界面点击
+document.getElementById('startOverlay').addEventListener('click', function() { flap(); });
+document.getElementById('overOverlay').addEventListener('click', function() { flap(); });
+
+// 虚拟按钮
+document.getElementById('btnLeft').addEventListener('touchstart', function(e) { e.preventDefault(); flap(); }, { passive: false });
+document.getElementById('btnLeft').addEventListener('mousedown', function(e) { e.preventDefault(); flap(); });
+
+// ========== 初始化 ==========
+document.getElementById('hiEl').textContent = hiScore;
+bird.y = H / 2;
+initClouds();
+requestAnimationFrame(function(ts) {
+    lastTime = ts;
+    requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
