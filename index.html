@@ -165,7 +165,8 @@
         /* ========== 英雄区 ========== */
         .hero {
             margin-top: 70px;
-            height: 500px;
+            height: 260px;
+            min-height: 200px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -215,7 +216,7 @@
         
         .hero-title {
             font-size: clamp(20px, 5vw, 48px);
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             text-shadow: 
                 0 0 10px var(--pixel-cyan),
                 0 0 20px var(--pixel-cyan),
@@ -751,7 +752,7 @@
                         case 'memory': drawMemoryPreview(ctx, w, h, color, frame); break;
                         case 'guess': drawGuessPreview(ctx, w, h, color, frame); break;
                         case 'shooter': drawShooterPreview(ctx, w, h, color, frame); break;
-                        case 'datecalc': drawDatecalcPreview(ctx, w, color, frame); break;
+                        case 'flappy': drawFlappyPreview(ctx, w, h, color, frame); break;
                     }
                     
                     ctx.shadowBlur = 0;
@@ -1362,6 +1363,90 @@
                 PixelPlay.showNicknameModal();
             });
         });
+
+        // --- Flappy Bird 预览：小鸟飞 + 绿色管道 ---
+        function drawFlappyPreview(ctx, w, h, color, f) {
+            ctx.clearRect(0, 0, w, h);
+            // 天空渐变
+            var sky = ctx.createLinearGradient(0, 0, 0, h);
+            sky.addColorStop(0, '#1a1a3a');
+            sky.addColorStop(0.6, '#2d5a87');
+            sky.addColorStop(1, '#87ceeb');
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, w, h);
+            // 云朵
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            var cloudX = (f * 0.8) % (w + 80) - 40;
+            ctx.beginPath();
+            ctx.arc(cloudX, h * 0.18, 15, 0, Math.PI * 2);
+            ctx.arc(cloudX + 18, h * 0.14, 20, 0, Math.PI * 2);
+            ctx.arc(cloudX + 38, h * 0.18, 13, 0, Math.PI * 2);
+            ctx.fill();
+            // 管道（两根，间距滚动）
+            var pipeW = w * 0.13;
+            var pipeGap = h * 0.32;
+            var scroll = (f * 1.5) % (w * 0.5);
+            ctx.fillStyle = '#39ff14';
+            // 左管
+            var px1 = w * 0.2 - scroll;
+            if (px1 + pipeW > 0 && px1 < w) {
+                var topH1 = h * 0.25 + Math.sin(f * 0.1) * h * 0.05;
+                ctx.fillRect(px1, 0, pipeW, topH1);
+                ctx.fillRect(px1 - 4, topH1, pipeW + 8, 14);
+                ctx.fillRect(px1, topH1 + 14, pipeW, h * 0.45);
+                ctx.fillRect(px1 - 4, h - h * 0.25 - pipeGap - 14, pipeW + 8, 14);
+                ctx.fillRect(px1, h - h * 0.25 - pipeGap, pipeW, h * 0.25);
+            }
+            // 右管
+            var px2 = px1 + w * 0.5;
+            if (px2 + pipeW > 0 && px2 < w) {
+                var topH2 = h * 0.38 + Math.cos(f * 0.12) * h * 0.05;
+                ctx.fillRect(px2, 0, pipeW, topH2);
+                ctx.fillRect(px2 - 4, topH2, pipeW + 8, 14);
+                ctx.fillRect(px2, topH2 + 14, pipeW, h * 0.45);
+                ctx.fillRect(px2 - 4, h - h * 0.25 - pipeGap - 14, pipeW + 8, 14);
+                ctx.fillRect(px2, h - h * 0.25 - pipeGap, pipeW, h * 0.25);
+            }
+            // 小鸟
+            var birdY = h * 0.48 + Math.sin(f * 0.22) * h * 0.12;
+            var birdX = w * 0.38;
+            var wing = Math.sin(f * 0.5) > 0 ? -4 : 0;
+            ctx.fillStyle = '#ffdd00';
+            ctx.beginPath();
+            ctx.ellipse(birdX, birdY, 9, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ff9500';
+            ctx.beginPath();
+            ctx.ellipse(birdX, birdY + wing, 7, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // 眼睛
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(birdX + 4, birdY - 2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(birdX + 5, birdY - 3, 1, 0, Math.PI * 2);
+            ctx.fill();
+            // 嘴巴
+            ctx.fillStyle = '#ff6b35';
+            ctx.beginPath();
+            ctx.moveTo(birdX + 8, birdY);
+            ctx.lineTo(birdX + 15, birdY + 2);
+            ctx.lineTo(birdX + 8, birdY + 4);
+            ctx.fill();
+            // 地面
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, h - h * 0.22, w, h * 0.22);
+            ctx.fillStyle = '#39ff14';
+            ctx.fillRect(0, h - h * 0.22, w, 8);
+            // 地面装饰线
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            var gOff = (f * 1.2) % 30;
+            for (var i = -1; i < w / 30 + 1; i++) {
+                ctx.fillRect(i * 30 + gOff, h - h * 0.22 + 14, 15, 3);
+            }
+        }
     </script>
 </body>
 </html>
