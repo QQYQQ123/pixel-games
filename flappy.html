@@ -158,7 +158,6 @@ let pipes = [];
 let particles = [];
 let groundOffset = 0;
 let frameCount = 0;
-let lastTime = 0;         // 上帧时间戳（毫秒）
 let pxScrolled = 0;      // 本回合累计滚动像素（用于控制柱子生成）
 
 // 小鸟状态
@@ -527,9 +526,6 @@ function update(dt) {
     pxScrolled += spd;
     if (pxScrolled >= PIPE_INTERVAL) {
         pxScrolled -= PIPE_INTERVAL;
-        spawnPipe();
-    }）
-    if (frameCount % Math.round(PIPE_INTERVAL / PIPE_SPEED) === 0) {
         spawnPipe();
     }
 
